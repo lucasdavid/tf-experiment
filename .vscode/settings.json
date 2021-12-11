@@ -1,0 +1,7 @@
+{
+  "files.watcherExclude": {
+    "**/data/**": true
+  },
+  "python.formatting.provider": "yapf",
+  "editor.tabSize": 2
+}

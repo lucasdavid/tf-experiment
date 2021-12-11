@@ -1,0 +1,86 @@
+setup:
+  tf_seed: 421
+dataset:
+  data_dir: "./data/"
+  name: cifar10
+  splits:
+    - train[:80%]
+    - train[80%:]
+    - test
+  batch_size: 64
+  parallel_calls: auto
+  buffer_size: auto
+  drop_remainder: true
+  preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+  augment: true
+  aug:
+    brightness_delta: 0.2
+    saturation_lower: 0.5
+    saturation_upper: 1.0
+    contrast_lower: 0.5
+    contrast_upper: 1.5
+    hue_delta: 0.0
+model:
+  name: rn50_clf_cifar10
+  input_shape: [32, 32, 3]
+  units: 10
+  activation: softmax
+  dropout_rate: 0.2
+  backbone:
+    architecture: ResNet50V2
+    weights: imagenet
+    pooling: avg
+    trainable: false
+training:
+  perform: true
+  epochs: 2
+  optimizer:
+    class_name: sgd
+    config:
+      learning_rate: 0.01
+      momentum: 0.9
+      nesterov: true
+  loss: sparse_categorical_crossentropy
+  metrics:
+    - accuracy
+    - sparse_top_k_categorical_accuracy
+    # - precision
+    # - recall
+  paths:
+    ckpt: "./models/cifar10-resnet50-baseline/checkpoint"
+    export: "./models/cifar10-resnet50-baseline/trained"
+  callbacks:
+    - class_name: ModelCheckpoint
+      config:
+        path: "./models/cifar10-resnet50-baseline/training/checkpoint"
+  verbose: 1
+#   perform = os.environ.get('PERFORM_T', 'true') == 'true'
+
+#   epochs = int(os.environ.get('EPOCHS', '100'))
+#   temperature = 0.05
+  
+#   train_steps = int(os.environ.get('TRAIN_STEPS', '0'))
+#   valid_steps = int(os.environ.get('VALID_STEPS', '0'))
+#   initial_epoch = int(os.environ.get('INITIAL_EPOCH', '0'))
+  
+#   learning_rate = float(os.environ.get('LR', '0.001'))
+
+#   optimizer_name = os.environ.get('OPT', 'momentum')
+#   optimizer = get_optimizer(optimizer_name, learning_rate)
+
+#   logs = os.path.join(logs_dir, f'baseline-i3-supcon-opt:{optimizer_name}-lr:{learning_rate}-batch:{DataConfig.batch_size}')
+#   weights = os.path.join(weights_dir, f'baseline-i3-supcon-opt:{optimizer_name}-lr:{learning_rate}-batch:{DataConfig.batch_size}/checkpoint')
+  
+#   loss_weights = {'artist': 0.4, 'style': 0.3, 'genre': 0.3}
+#   loss = {
+#     'artist': SupervisedContrastiveLoss(temperature),
+#     'style': SupervisedContrastiveLoss(temperature),
+#     'genre': SupervisedContrastiveLoss(temperature),
+#   }
+
+#   callbacks = lambda: [
+#     tf.keras.callbacks.TerminateOnNaN(),
+#     tf.keras.callbacks.EarlyStopping(patience=50, verbose=1),
+#     tf.keras.callbacks.TensorBoard(SupconConfig.training.logs, histogram_freq=1, write_graph=True, profile_batch=0),
+#     tf.keras.callbacks.ModelCheckpoint(SupconConfig.training.weights, save_weights_only=True, save_best_only=True, verbose=1),
+#   ]

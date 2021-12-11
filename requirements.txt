@@ -1,0 +1,14 @@
+numpy
+scipy
+pandas
+PyYAML
+sacred
+
+tensorflow
+tensorflow-datasets
+tensorflow-addons
+h5py
+
+scikit-learn
+scikit-image
+joblib
