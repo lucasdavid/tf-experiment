@@ -21,8 +21,8 @@ limitations under the License.
 
 """
 
+import pandas as pd
 import tensorflow as tf
-from keras.utils.layer_utils import count_params
 from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
 
@@ -38,79 +38,27 @@ ex.captured_out_filter = apply_backspaces_and_linefeeds
 
 
 @ex.main
-def run(_log, model):
+def run(setup, dataset, model, _log):
+  global DS, R
+
   _log.info(__doc__)
 
-  setup()
-  
-  train, valid, test = retrieve_dataset()
-  model, backbone = create_or_retrieve_model()
-  model, history = train_or_restore(model, backbone, train, valid)
-  
-  evaluate(model, test)
-
-  _log.info(history)
-
-
-@ex.capture(prefix='setup')
-def setup(tf_seed, _log):
-  global DS, R
-  _log.info('-' * 32)
-
+  # region Setup
   gpus_with_memory_growth()
-
   DS = appropriate_distributed_strategy()
-  R = tf.random.Generator.from_seed(tf_seed, alg='philox')
+  R = tf.random.Generator.from_seed(setup['tf_seed'], alg='philox')
+  # endregion
 
+  train, valid, test, info = datasets.tfds.load_and_prepare(dataset, randgen=R)
+  model, backbone = build_model()
+  model, history = train_or_restore(model, backbone, train, valid)
+  report = evaluate(model, test)
 
-@ex.capture(prefix='dataset')
-def retrieve_dataset(
-    data_dir,
-    name,
-    sizes,
-    batch_size,
-    buffer_size,
-    parallel_calls,
-    drop_remainder,
-    task,
-    classes,
-    splits,
-    augmentation,
-    preprocess_fn,
-    _log,
-):
-  global R
+  print(report.round(4))
 
-  parts, info = datasets.tfds.load(name, data_dir, splits)
-
-  _log.info('-' * 32)
-  _log.info(f'{info.name}: {info.description}')
-
-  kwargs = dict(
-    batch_size=batch_size,
-    sizes=sizes,
-    task=task,
-    classes=classes,
-    aug_policy=augmentation['policy'],
-    aug_config=augmentation['config'],
-    buffer_size=buffer_size,
-    parallel_calls=parallel_calls,
-    preprocess_fn=get_preprocess_fn(preprocess_fn),
-    drop_remainder=drop_remainder,
-    randgen=R
-  )
-
-  train, valid, test = (datasets.tfds.prepare(part, **kwargs)
-                        for part in parts)
-
-  print(f'train: {train}')
-  print(f'valid: {valid}')
-  print(f'test:  {test}')
-
-  return train, valid, test
 
 @ex.capture(prefix='model')
-def create_or_retrieve_model(input_shape, backbone, units, activation, dropout_rate, name, _log):
+def build_model(input_shape, backbone, units, activation, dropout_rate, name, _log):
   _log.info('-' * 32)
 
   with DS.scope():
@@ -118,14 +66,7 @@ def create_or_retrieve_model(input_shape, backbone, units, activation, dropout_r
     backbone_nn = models.backbone.get(inputs, **backbone)
     model = models.classification.head(inputs, backbone_nn, units, activation, dropout_rate, name)
 
-  _log.info(f'Model {model.name}')
-  _log.info(' →  '.join(f'{l.name} ({type(l).__name__})' for l in model.layers))
-
-  trainable_params = count_params(model.trainable_weights)
-  non_trainable_params = count_params(model.non_trainable_weights)
-  
-  _log.info(f'Total params:     {trainable_params + non_trainable_params}')
-  _log.info(f'Trainable params: {trainable_params}')
+  models.summary(model, _log.info)
 
   return model, backbone_nn
 
@@ -158,19 +99,18 @@ def train_or_restore(
     nn = tf.keras.models.load(paths['export'])
     return nn, None
 
-  loss = tf.losses.get(loss)
-  optimizer = tf.optimizers.get(dict(optimizer))
-  metrics = [tf.metrics.get(m) for m in metrics]
-  callbacks = [training.get_callback(c) for c in callbacks] if callbacks else []
-
   with DS.scope():
+    loss = tf.losses.get(loss)
+    optimizer = tf.optimizers.get(dict(optimizer))
+    metrics = [tf.metrics.get(m) for m in metrics]
+    callbacks = [training.get_callback(c) for c in callbacks] if callbacks else []
+
     nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
-  _log.info(f'Head training for {epochs} epochs.')
   history = training.run(nn, train, valid, epochs, callbacks=callbacks, verbose=verbose)
-
-  _log.info(f'loading best weights from {paths["best"]}')
-  nn.load_weights(paths['best'])
+  
+  with DS.scope():
+    nn.load_weights(paths['best'])
 
   unfreeze_top_layers(backbone, finetune['training_layers'], finetune['freeze_bn'])
 
@@ -178,8 +118,6 @@ def train_or_restore(
     optimizer = tf.optimizers.get(dict(finetune['optimizer']))
     nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
-  _log.info(f'Fine-tuning for {finetune["epochs"]} epochs.')
-  
   history = training.run(
     nn,
     train,
@@ -189,18 +127,22 @@ def train_or_restore(
     callbacks=callbacks,
     verbose=verbose
   )
-
-  _log.info(f'loading best weights from {paths["best"]}')
-  nn.load_weights(paths['best'])
-
-  _log.info(f'exporting model to {paths["export"]}')
+  with DS.scope():
+    nn.load_weights(paths['best'])
   nn.save(paths['export'], save_format='tf')
 
   return nn, history
 
+@ex.capture(prefix='evaluation')
+def evaluate(model, test, report_path, classes=None):
 
-def evaluate(model, test):
   labels, probabilities = testing.labels_and_probs(model, test)
+  evaluations = testing.metrics_per_label(labels, probabilities, classes=classes)
+
+  mcm = evaluations.pop('multilabel_confusion_matrix')
+  report = pd.DataFrame(evaluations)
+
+  report.to_csv()
 
 
 if __name__ == '__main__':

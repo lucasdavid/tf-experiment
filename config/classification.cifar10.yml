@@ -91,3 +91,5 @@ training:
     - class_name: BackupAndRestore
       config:
         backup_dir: *ckptpath
+evaluation:
+  report_path: "./logs/cifar10/rn50-baseline/evaluation.csv"

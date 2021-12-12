@@ -1,29 +1,31 @@
 setup:
   tf_seed: 421
 dataset:
-  data_dir: "./data/"
-  name: "voc/2007"
-  batch_size: 64
-  sizes: [512, 512]
-  buffer_size: auto
-  parallel_calls: auto
-  drop_remainder: true
-  task: classification_from_detection
-  classes: &classes 20
-  splits:
-    - train
-    - validation
-    - test
-  augmentation:
-    policy: true
-    config:
-      brightness_delta: 0.2
-      saturation_lower: 0.5
-      saturation_upper: 1.0
-      contrast_lower: 0.5
-      contrast_upper: 1.5
-      hue_delta: 0.0
-  preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+  load:
+    name: "voc/2007"
+    data_dir: "./data/"
+    splits:
+      - train
+      - validation
+      - test
+  prepare:
+    batch_size: 64
+    sizes: [512, 512]
+    buffer_size: auto
+    parallel_calls: auto
+    drop_remainder: true
+    task: classification_from_detection
+    classes: &classes 20
+    augmentation:
+      policy: true
+      config:
+        brightness_delta: 0.2
+        saturation_lower: 0.5
+        saturation_upper: 1.0
+        contrast_lower: 0.5
+        contrast_upper: 1.5
+        hue_delta: 0.0
+    preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   name: rn50_clf_voc07
   input_shape: [512, 512, 3]
@@ -91,3 +93,5 @@ training:
     - class_name: BackupAndRestore
       config:
         backup_dir: *ckptpath
+evaluation:
+  report_path: "./logs/voc07/rn50-baseline/evaluation.csv"
