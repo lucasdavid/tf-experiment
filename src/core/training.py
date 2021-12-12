@@ -2,11 +2,10 @@ from typing import List, Optional
 
 import tensorflow as tf
 
-from .utils import logged
+from .callbacks import get as get_callback
 
 
-@logged
-def train_fn(
+def run(
     nn: tf.keras.Model,
     train: tf.data.Dataset,
     valid: tf.data.Dataset,
@@ -27,11 +26,16 @@ def train_fn(
       steps_per_epoch=train_steps,
       validation_steps=valid_steps,
       verbose=verbose,
-    );
-
+    )
   except KeyboardInterrupt:
     print('\n  interrupted')
   else:
     print('\n  done')
-  
-  return nn.history
+
+  return nn.history.history
+
+
+__all__ = [
+  'run',
+  'get_callback',
+]

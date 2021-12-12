@@ -1,9 +1,7 @@
 from typing import Optional
 
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Dropout, GlobalAveragePooling2D
-
-from ..utils import unfreeze_top_layers
+from tensorflow.keras.layers import Dense, Dropout
 
 
 def head(
@@ -23,36 +21,3 @@ def head(
     outputs=y,
     name=name
   )
-
-
-def model(
-    input_tensor: tf.Tensor,
-    backbone: tf.keras.Model,
-    classes: int,
-    dropout_rate: Optional[float] = None,
-    fine_tune_layers: float = 0,
-    freeze_batch_norm: bool = True,
-    weights: Optional[str] = None,
-    trainable = False,
-    name = None
-):
-  nn = head(
-    backbone,
-    input_tensor,
-    classes,
-    dropout_rate=dropout_rate,
-    name=name
-  )
-
-  unfreeze_top_layers(
-    backbone,
-    fine_tune_layers,
-    freeze_batch_norm
-  )
-
-  if weights:
-    nn.load_weights(weights)
-
-  nn.trainable = trainable
-
-  return nn

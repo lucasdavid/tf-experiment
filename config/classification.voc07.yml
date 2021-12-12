@@ -1,0 +1,93 @@
+setup:
+  tf_seed: 421
+dataset:
+  data_dir: "./data/"
+  name: "voc/2007"
+  batch_size: 64
+  sizes: [512, 512]
+  buffer_size: auto
+  parallel_calls: auto
+  drop_remainder: true
+  task: classification_from_detection
+  classes: &classes 20
+  splits:
+    - train
+    - validation
+    - test
+  augmentation:
+    policy: true
+    config:
+      brightness_delta: 0.2
+      saturation_lower: 0.5
+      saturation_upper: 1.0
+      contrast_lower: 0.5
+      contrast_upper: 1.5
+      hue_delta: 0.0
+  preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+model:
+  name: rn50_clf_voc07
+  input_shape: [512, 512, 3]
+  units: *classes
+  activation: sigmoid
+  dropout_rate: 0.2
+  backbone:
+    architecture: ResNet50V2
+    weights: imagenet
+    pooling: avg
+    trainable: false
+training:
+  perform: true
+  epochs: &epochs 2
+  optimizer:
+    class_name: sgd
+    config: &momentum
+      learning_rate: 0.01
+      momentum: 0.9
+      nesterov: true
+  loss: BinaryCrossentropy
+  metrics:
+    - BinaryAccuracy
+    - Precision
+    - Recall
+  finetune:
+    epochs: 5
+    initial_epoch: *epochs
+    training_layers: 'conv5_block1_1_conv'
+    freeze_bn: true
+    optimizer:
+      class_name: sgd
+      config:
+        <<: *momentum
+        learning_rate: 0.001
+  paths:
+    tb: &tbpath "./logs/voc07/rn50-baseline/"
+    best: &bestpath "./logs/voc07/rn50-baseline/best.h5"
+    ckpt: &ckptpath "./logs/voc07/rn50-baseline/bkp/"
+    export: &exportpath "./logs/voc07/rn50-baseline/final"
+    history: &historypath "./logs/voc07/rn50-baseline/history.csv"
+  verbose: 2
+  callbacks:
+    - TerminateOnNaN
+    - class_name: EarlyStopping
+      config:
+        patience: 10
+        verbose: 1
+    - class_name: TensorBoard
+      config:
+        log_dir: *tbpath
+        histogram_freq: 1
+        profile_batch: 0
+        write_graph: true
+    - class_name: CSVLogger
+      config:
+        filename: *historypath
+        append: true
+    - class_name: ModelCheckpoint
+      config:
+        verbose: 1
+        filepath: *bestpath
+        save_best_only: true
+        save_weights_only: true
+    - class_name: BackupAndRestore
+      config:
+        backup_dir: *ckptpath

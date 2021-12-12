@@ -1,0 +1,93 @@
+setup:
+  tf_seed: 421
+dataset:
+  data_dir: "./data/"
+  name: cifar10
+  batch_size: 64
+  sizes: [224, 224]
+  parallel_calls: auto
+  buffer_size: auto
+  drop_remainder: true
+  classes: &classes 10
+  splits:
+    - train[:80%]
+    - train[80%:]
+    - test
+  augmentation:
+    policy: true
+    config:
+      brightness_delta: 0.2
+      saturation_lower: 0.5
+      saturation_upper: 1.0
+      contrast_lower: 0.5
+      contrast_upper: 1.5
+      hue_delta: 0.0
+  preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+model:
+  name: rn50_clf_cifar10
+  input_shape: [32, 32, 3]
+  units: *classes
+  activation: null
+  dropout_rate: 0.2
+  backbone:
+    architecture: ResNet50V2
+    weights: imagenet
+    pooling: avg
+    trainable: false
+training:
+  perform: true
+  epochs: &epochs 2
+  optimizer:
+    class_name: sgd
+    config: &momentum
+      learning_rate: 0.01
+      momentum: 0.9
+      nesterov: true
+  loss: sparse_categorical_crossentropy
+  metrics:
+    - SparseCategoricalAccuracy
+    - SparseTopKCategoricalAccuracy
+    # - precision
+    # - recall
+  finetune:
+    epochs: 5
+    initial_epoch: *epochs
+    training_layers: 'conv5_block1_1_conv'
+    freeze_bn: true
+    optimizer:
+      class_name: sgd
+      config:
+        <<: *momentum
+        learning_rate: 0.001
+  paths:
+    tb: &tbpath "./logs/cifar10/rn50-baseline/"
+    best: &bestpath "./logs/cifar10/rn50-baseline/best.h5"
+    ckpt: &ckptpath "./logs/cifar10/rn50-baseline/bkp/"
+    export: &exportpath "./logs/cifar10/rn50-baseline/final"
+    history: &historypath "./logs/cifar10/rn50-baseline/history.csv"
+  verbose: 2
+  callbacks:
+    - TerminateOnNaN
+    - class_name: EarlyStopping
+      config:
+        patience: 10
+        verbose: 1
+    - class_name: TensorBoard
+      config:
+        log_dir: *tbpath
+        histogram_freq: 1
+        profile_batch: 0
+        write_graph: true
+    - class_name: CSVLogger
+      config:
+        filename: *historypath
+        append: true
+    - class_name: ModelCheckpoint
+      config:
+        verbose: 1
+        filepath: *bestpath
+        save_best_only: true
+        save_weights_only: true
+    - class_name: BackupAndRestore
+      config:
+        backup_dir: *ckptpath

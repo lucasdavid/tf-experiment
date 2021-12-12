@@ -4,32 +4,50 @@ Strategy Description:
 
   - MNIST dataset
   - ResNet50
+
+Copyright 2021 Lucas Oliveira David
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
 """
 
 import tensorflow as tf
-from keras.utils import layer_utils
+from keras.utils.layer_utils import count_params
 from sacred import Experiment
+from sacred.utils import apply_backspaces_and_linefeeds
 
-from core import models
+from core import models, testing, training, datasets
 from core.boot import *
-from core.datasets import tfds
-from core.training import *
 from core.utils import *
 
 DS: tf.distribute.Strategy = None
 R: tf.random.Generator = None
 
-ex = Experiment(
-  save_git_info=False
-)
+ex = Experiment(save_git_info=False)
+ex.captured_out_filter = apply_backspaces_and_linefeeds
+
 
 @ex.main
-def run(_log):
+def run(_log, model):
   _log.info(__doc__)
 
   setup()
+  
   train, valid, test = retrieve_dataset()
-  model, history = compile_and_train_or_restore(train, valid)
+  model, backbone = create_or_retrieve_model()
+  model, history = train_or_restore(model, backbone, train, valid)
+  
+  evaluate(model, test)
 
   _log.info(history)
 
@@ -37,9 +55,7 @@ def run(_log):
 @ex.capture(prefix='setup')
 def setup(tf_seed, _log):
   global DS, R
-
   _log.info('-' * 32)
-  _log.info('Setup')
 
   gpus_with_memory_growth()
 
@@ -51,68 +67,73 @@ def setup(tf_seed, _log):
 def retrieve_dataset(
     data_dir,
     name,
-    splits,
+    sizes,
     batch_size,
-    augment,
-    aug,
     buffer_size,
     parallel_calls,
-    preprocess_fn,
     drop_remainder,
+    task,
+    classes,
+    splits,
+    augmentation,
+    preprocess_fn,
     _log,
 ):
   global R
 
-  parts, info = tfds.load(name, data_dir, splits)
-  
+  parts, info = datasets.tfds.load(name, data_dir, splits)
+
   _log.info('-' * 32)
-  _log.info(f'Dataset {info.name}')
-  _log.info(info.description)
+  _log.info(f'{info.name}: {info.description}')
 
-  preprocess_fn = get_preprocess_fn(preprocess_fn)
-
-  return (
-    tfds.prepare(part, batch_size, augment, aug, buffer_size, parallel_calls, preprocess_fn, drop_remainder, R)
-    for part in parts
+  kwargs = dict(
+    batch_size=batch_size,
+    sizes=sizes,
+    task=task,
+    classes=classes,
+    aug_policy=augmentation['policy'],
+    aug_config=augmentation['config'],
+    buffer_size=buffer_size,
+    parallel_calls=parallel_calls,
+    preprocess_fn=get_preprocess_fn(preprocess_fn),
+    drop_remainder=drop_remainder,
+    randgen=R
   )
 
+  train, valid, test = (datasets.tfds.prepare(part, **kwargs)
+                        for part in parts)
+
+  print(f'train: {train}')
+  print(f'valid: {valid}')
+  print(f'test:  {test}')
+
+  return train, valid, test
 
 @ex.capture(prefix='model')
-def create_model(
-    input_shape,
-    backbone,
-    units,
-    activation,
-    dropout_rate,
-    name,
-    _log
-):
+def create_or_retrieve_model(input_shape, backbone, units, activation, dropout_rate, name, _log):
   _log.info('-' * 32)
 
-  inputs = tf.keras.Input(input_shape, name='images')
-
-  model = models.classification.head(
-    inputs,
-    backbone=models.backbone.get(inputs, **backbone),
-    classes=units,
-    activation=activation,
-    dropout_rate=dropout_rate,
-    name=name
-  )
+  with DS.scope():
+    inputs = tf.keras.Input(input_shape, name='images')
+    backbone_nn = models.backbone.get(inputs, **backbone)
+    model = models.classification.head(inputs, backbone_nn, units, activation, dropout_rate, name)
 
   _log.info(f'Model {model.name}')
   _log.info(' →  '.join(f'{l.name} ({type(l).__name__})' for l in model.layers))
+
+  trainable_params = count_params(model.trainable_weights)
+  non_trainable_params = count_params(model.non_trainable_weights)
   
-  trainable_params = layer_utils.count_params(model.trainable_weights)
-  non_trainable_params = layer_utils.count_params(model.non_trainable_weights)
   _log.info(f'Total params:     {trainable_params + non_trainable_params}')
   _log.info(f'Trainable params: {trainable_params}')
 
-  return model
+  return model, backbone_nn
 
 
 @ex.capture(prefix='training')
-def compile_and_train_or_restore(
+def train_or_restore(
+    nn,
+    backbone,
     train,
     valid,
     perform,
@@ -123,7 +144,8 @@ def compile_and_train_or_restore(
     callbacks,
     verbose,
     paths,
-    _log
+    finetune,
+    _log,
 ):
   global DS
 
@@ -135,25 +157,50 @@ def compile_and_train_or_restore(
 
     nn = tf.keras.models.load(paths['export'])
     return nn, None
-  
+
+  loss = tf.losses.get(loss)
+  optimizer = tf.optimizers.get(dict(optimizer))
+  metrics = [tf.metrics.get(m) for m in metrics]
+  callbacks = [training.get_callback(c) for c in callbacks] if callbacks else []
+
   with DS.scope():
-    nn = create_model()
+    nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
-    nn.compile(
-      optimizer=tf.optimizers.get(dict(optimizer)),
-      loss=tf.losses.get(loss),
-      metrics=metrics,
-    )
+  _log.info(f'Head training for {epochs} epochs.')
+  history = training.run(nn, train, valid, epochs, callbacks=callbacks, verbose=verbose)
 
-  if callbacks:
-    callbacks = [tf.keras.callbacks.get(c) for c in callbacks]
+  _log.info(f'loading best weights from {paths["best"]}')
+  nn.load_weights(paths['best'])
 
-  history = train_fn(nn, train, valid, epochs, callbacks=callbacks, verbose=verbose)
+  unfreeze_top_layers(backbone, finetune['training_layers'], finetune['freeze_bn'])
+
+  with DS.scope():
+    optimizer = tf.optimizers.get(dict(finetune['optimizer']))
+    nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+
+  _log.info(f'Fine-tuning for {finetune["epochs"]} epochs.')
+  
+  history = training.run(
+    nn,
+    train,
+    valid,
+    epochs=finetune['epochs'],
+    initial_epoch=finetune['initial_epoch'],
+    callbacks=callbacks,
+    verbose=verbose
+  )
+
+  _log.info(f'loading best weights from {paths["best"]}')
+  nn.load_weights(paths['best'])
 
   _log.info(f'exporting model to {paths["export"]}')
   nn.save(paths['export'], save_format='tf')
 
   return nn, history
+
+
+def evaluate(model, test):
+  labels, probabilities = testing.labels_and_probs(model, test)
 
 
 if __name__ == '__main__':

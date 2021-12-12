@@ -1,10 +1,10 @@
 from functools import partial
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, Tuple, Union
 
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from . import augment
+from . import augment, tasks
 
 
 def load(
@@ -27,6 +27,9 @@ def load(
 def prepare(
     dataset: tf.data.Dataset,
     batch_size: int,
+    sizes: Tuple[int],
+    classes: int,
+    task: str = 'classification',
     aug_policy: Union[bool, str, Callable] = False,
     aug_config: Dict[str, Any] = None,
     buffer_size: Union[int, str] = 'auto',
@@ -40,10 +43,11 @@ def prepare(
   if parallel_calls == 'auto':
     parallel_calls = tf.data.AUTOTUNE
 
-  policy = augment.get(aug_policy)
-  policy = partial(policy, aug_config=aug_config, randgen=randgen, preprocess_fn=preprocess_fn)
+  task = partial(tasks.get(task), classes=classes, sizes=sizes)
+  aug_policy = augment.get(aug_policy)
+  aug_policy = partial(aug_policy, aug_config=aug_config, randgen=randgen, preprocess_fn=preprocess_fn)
 
   return (dataset
-          .map(policy, num_parallel_calls=parallel_calls)
+          .map(lambda entry: aug_policy(*task(entry)), num_parallel_calls=parallel_calls)
           .batch(batch_size, drop_remainder=drop_remainder)
           .prefetch(buffer_size))
