@@ -14,24 +14,17 @@
 
 import tensorflow as tf
 
+def target_and_output(model, dataset):
+  y_ = []
+  o_ = []
 
-def gpus_with_memory_growth():
-  gpus = list(tf.config.list_physical_devices('GPU'))
+  for batch, (x, t) in enumerate(dataset):
+    o = model(x, training=False)
 
-  print(f'Number of devices: {len(gpus)}')
+    y_.append(t)
+    o_.append(o)
 
-  for d in gpus:
-    print(d)
-    print(f'  Setting device {d} to memory-growth mode.')
-    
-    try:
-      tf.config.experimental.set_memory_growth(d, True)
-    except Exception as e:
-      print(e)
-
-
-def appropriate_distributed_strategy():
-  if tf.config.list_physical_devices('GPU'):
-    return tf.distribute.MirroredStrategy()
-  else:
-    return tf.distribute.get_strategy()
+    print('.', end='' if (batch+1) % 120 else '\n')
+  
+  return (tf.concat(y_, axis=0),
+          tf.concat(o_, axis=0))

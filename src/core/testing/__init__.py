@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow as tf
+from typing import Any, Callable, Dict, List, Union
+
+import pandas as pd
+
+from . import tasks
 
 
-def gpus_with_memory_growth():
-  gpus = list(tf.config.list_physical_devices('GPU'))
+def report(
+    target_and_output,
+    task: Union[str, Callable],
+    run_params: Dict[str, Any],
+    report_path: str = None,
+    classes: List[str] = None,
+):
+  task = tasks.get(task)
+  evaluations = task(target_and_output, classes=classes)
+  evaluations = pd.DataFrame(evaluations)
 
-  print(f'Number of devices: {len(gpus)}')
-
-  for d in gpus:
-    print(d)
-    print(f'  Setting device {d} to memory-growth mode.')
-    
-    try:
-      tf.config.experimental.set_memory_growth(d, True)
-    except Exception as e:
-      print(e)
-
-
-def appropriate_distributed_strategy():
-  if tf.config.list_physical_devices('GPU'):
-    return tf.distribute.MirroredStrategy()
-  else:
-    return tf.distribute.get_strategy()
+  evaluations.to_csv(report_path, index=False)
+  
+  print('-' * 32)
+  print(task.replace('_', ' ').capitalize(), 'Report')
+  print(evaluations.round(4))
