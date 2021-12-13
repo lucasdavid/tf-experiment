@@ -1,6 +1,7 @@
 from functools import partial
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
+import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
@@ -71,3 +72,20 @@ def load_and_prepare(
   print(f'test:  {test}')
 
   return train, valid, test, info
+
+
+def classes(info):
+  labels_key = [k for k in info.features.keys() if k.startswith('label')]
+  
+  if not labels_key:
+    raise ValueError(f'Cannot extract labels from {info}.')
+  
+  classes = info.features[labels_key[0]]
+
+  if hasattr(classes, '_str2int'):
+    classes = classes._str2int.keys()
+  
+  elif hasattr(classes, 'feature') and hasattr(classes.feature, '_str2int'):
+    classes = classes.feature._str2int.keys()
+
+  return np.asarray(list(classes))

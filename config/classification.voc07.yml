@@ -27,11 +27,12 @@ dataset:
         hue_delta: 0.0
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  name: rn50_clf_voc07
   input_shape: [512, 512, 3]
-  units: *classes
-  activation: sigmoid
-  dropout_rate: 0.2
+  head:
+    name: rn50_clf_voc07
+    units: *classes
+    activation: sigmoid
+    dropout_rate: 0.2
   backbone:
     architecture: ResNet50V2
     weights: imagenet

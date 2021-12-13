@@ -6,7 +6,10 @@ import tensorflow as tf
 from sklearn import metrics as skmetrics
 
 
-def metrics_per_label(gt, probs, threshold=0.5, classes=None):
+def metrics_per_label(gt, probs, classes, threshold=0.5):
+  if len(gt.shape) > 1:
+    gt = tf.one_hot(gt, len(classes))
+
   p_pred = tf.cast(probs > threshold, probs.dtype).numpy()
 
   tru_ = tf.reduce_sum(gt, axis=0)
@@ -52,7 +55,6 @@ def labels_and_probs(nn, dataset):
 
   for ix, (images, labels) in enumerate(dataset):
     y = nn(images, training=False)
-    y = tf.nn.sigmoid(y)
 
     labels_.append(labels)
     probs_.append(y)

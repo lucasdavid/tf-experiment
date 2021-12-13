@@ -1,34 +1,38 @@
 setup:
   tf_seed: 421
 dataset:
-  data_dir: "./data/"
-  name: cifar10
-  batch_size: 64
-  sizes: [224, 224]
-  parallel_calls: auto
-  buffer_size: auto
-  drop_remainder: true
-  classes: &classes 10
-  splits:
-    - train[:80%]
-    - train[80%:]
-    - test
-  augmentation:
-    policy: true
-    config:
-      brightness_delta: 0.2
-      saturation_lower: 0.5
-      saturation_upper: 1.0
-      contrast_lower: 0.5
-      contrast_upper: 1.5
-      hue_delta: 0.0
-  preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+  load:
+    name: cifar10
+    data_dir: "./data/"
+    splits:
+      - train[:80%]
+      - train[80%:]
+      - test
+  prepare:
+    batch_size: 64
+    sizes: [32, 32]
+    buffer_size: auto
+    parallel_calls: auto
+    drop_remainder: true
+    task: classification
+    classes: &classes 10
+    augmentation:
+      policy: true
+      config:
+        brightness_delta: 0.2
+        saturation_lower: 0.5
+        saturation_upper: 1.0
+        contrast_lower: 0.5
+        contrast_upper: 1.5
+        hue_delta: 0.0
+    preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  name: rn50_clf_cifar10
   input_shape: [32, 32, 3]
-  units: *classes
-  activation: null
-  dropout_rate: 0.2
+  head:
+    name: rn50_clf_cifar10
+    units: *classes
+    activation: softmax
+    dropout_rate: 0.2
   backbone:
     architecture: ResNet50V2
     weights: imagenet
@@ -43,7 +47,7 @@ training:
       learning_rate: 0.01
       momentum: 0.9
       nesterov: true
-  loss: sparse_categorical_crossentropy
+  loss: SparseCategoricalCrossentropy
   metrics:
     - SparseCategoricalAccuracy
     - SparseTopKCategoricalAccuracy

@@ -21,12 +21,13 @@ limitations under the License.
 
 """
 
+import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
 
-from core import models, testing, training, datasets
+from core import datasets, models, testing, training
 from core.boot import *
 from core.utils import *
 
@@ -38,37 +39,37 @@ ex.captured_out_filter = apply_backspaces_and_linefeeds
 
 
 @ex.main
-def run(setup, dataset, model, _log):
+def run(setup, dataset, model, evaluation, _log):
   global DS, R
 
   _log.info(__doc__)
 
-  # region Setup
   gpus_with_memory_growth()
   DS = appropriate_distributed_strategy()
   R = tf.random.Generator.from_seed(setup['tf_seed'], alg='philox')
-  # endregion
 
   train, valid, test, info = datasets.tfds.load_and_prepare(dataset, randgen=R)
-  model, backbone = build_model()
-  model, history = train_or_restore(model, backbone, train, valid)
-  report = evaluate(model, test)
-
-  print(report.round(4))
-
-
-@ex.capture(prefix='model')
-def build_model(input_shape, backbone, units, activation, dropout_rate, name, _log):
-  _log.info('-' * 32)
+  classes = datasets.tfds.classes(info)
 
   with DS.scope():
-    inputs = tf.keras.Input(input_shape, name='images')
-    backbone_nn = models.backbone.get(inputs, **backbone)
-    model = models.classification.head(inputs, backbone_nn, units, activation, dropout_rate, name)
+    inputs = tf.keras.Input(model['input_shape'], name='images')
+    backbone = models.backbone.get(inputs, **model['backbone'])
+    model = models.classification.head(inputs, backbone, **model['head'])
 
   models.summary(model, _log.info)
 
-  return model, backbone_nn
+  model, history = train_or_restore(model, backbone, train.take(2), valid.take(2))
+  
+  # Evaluation
+  labels, probabilities = testing.labels_and_probs(model, test.take(2))
+  evaluations = testing.metrics_per_label(labels, probabilities, classes=classes)
+
+  mcm = evaluations.pop('multilabel_confusion_matrix')
+  report = pd.DataFrame(evaluations)
+
+  report.to_csv(evaluation['report_path'], index=False)
+
+  print(report.round(4))
 
 
 @ex.capture(prefix='training')
@@ -91,6 +92,7 @@ def train_or_restore(
   global DS
 
   _log.info('-' * 32)
+  _log.info('Training Classification Head')
 
   if not perform:
     _log.info('Training will be skipped (perform=false). Attempting to load '
@@ -103,12 +105,21 @@ def train_or_restore(
     loss = tf.losses.get(loss)
     optimizer = tf.optimizers.get(dict(optimizer))
     metrics = [tf.metrics.get(m) for m in metrics]
-    callbacks = [training.get_callback(c) for c in callbacks] if callbacks else []
 
     nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
-  history = training.run(nn, train, valid, epochs, callbacks=callbacks, verbose=verbose)
-  
+  history = training.run(
+    nn,
+    train,
+    valid,
+    epochs,
+    verbose=verbose,
+    callbacks=[training.get_callback(c) for c in callbacks],
+  )
+
+  _log.info('-' * 32)
+  _log.info('Fine-Tuning Entire Network')
+
   with DS.scope():
     nn.load_weights(paths['best'])
 
@@ -122,27 +133,18 @@ def train_or_restore(
     nn,
     train,
     valid,
+    verbose=verbose,
     epochs=finetune['epochs'],
     initial_epoch=finetune['initial_epoch'],
-    callbacks=callbacks,
-    verbose=verbose
+    callbacks=[training.get_callback(c) for c in callbacks],
   )
+
   with DS.scope():
     nn.load_weights(paths['best'])
+  
   nn.save(paths['export'], save_format='tf')
 
   return nn, history
-
-@ex.capture(prefix='evaluation')
-def evaluate(model, test, report_path, classes=None):
-
-  labels, probabilities = testing.labels_and_probs(model, test)
-  evaluations = testing.metrics_per_label(labels, probabilities, classes=classes)
-
-  mcm = evaluations.pop('multilabel_confusion_matrix')
-  report = pd.DataFrame(evaluations)
-
-  report.to_csv()
 
 
 if __name__ == '__main__':
