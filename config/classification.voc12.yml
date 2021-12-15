@@ -24,6 +24,9 @@ dataset:
     drop_remainder: true
     task: classification_multilabel_from_detection
     classes: &classes 20
+    keys:
+      - image
+      - label
     augmentation:
       policy: true
       config:

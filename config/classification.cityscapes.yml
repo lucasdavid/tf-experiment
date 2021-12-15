@@ -1,32 +1,32 @@
 setup:
-  tf_seed: 421
+  tf_seed: 41820
   paths:
-    data: "./data"
+    data: &paths_data "/scratch/lerdl/lucas.david/datasets/"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./models/cifar10/backup/"
+    ckpt: "/scratch/lerdl/lucas.david/logs/cityscapes/baseline/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
-    name: cifar10
-    data_dir: "./data/"
+    name: "cityscapes/semantic_segmentation_extra"
+    data_dir: *paths_data
     splits:
-      - train[:80%]
-      - train[80%:]
-      - test
+      - train
+      - validation
+      - train_extra
   prepare:
     batch_size: 64
-    sizes: [32, 32]
+    sizes: [512, 1024]
     buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
-    task: classification
-    classes: &classes 10
+    task: classification_multilabel_from_segmentation_cityscapes
+    classes: &classes 27
     keys:
-      - image
-      - label
+      - image_left
+      - segmentation_label
     augmentation:
       policy: true
       config:
@@ -38,34 +38,33 @@ dataset:
         hue_delta: 0.0
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  input_shape: [32, 32, 3]
+  input_shape: [512, 1024, 3]
   head:
-    name: rn50_clf_cifar10
+    name: rn101_cityscapes_ml
     units: *classes
-    activation: softmax
+    activation: sigmoid
     dropout_rate: 0.2
   backbone:
-    architecture: ResNet50V2
+    architecture: ResNet101V2
     weights: imagenet
     pooling: avg
     trainable: false
 training:
   perform: true
-  loss: SparseCategoricalCrossentropy
+  loss: BinaryCrossentropy
   optimizer:
     class_name: sgd
     config: &momentum
-      learning_rate: 0.1
+      learning_rate: 0.01
       momentum: 0.9
       nesterov: true
   metrics:
-    - SparseCategoricalAccuracy
-    - SparseTopKCategoricalAccuracy
-    # - precision
-    # - recall
+    - BinaryAccuracy
+    - Precision
+    - Recall
   config:
-    epochs: &epochs 2
-    verbose: 1
+    epochs: &epochs 50
+    verbose: 2
   callbacks: &callbacks
     - TerminateOnNaN
     - class_name: EarlyStopping
@@ -114,9 +113,10 @@ training:
         <<: *momentum
         learning_rate: 0.001
     config:
-      epochs: 4
+      epochs: 300
       initial_epoch: *epochs
+      verbose: 2
     callbacks: *callbacks
 evaluation:
-  task: sparse_classification_multiclass
+  task: classification_multilabel
   report_path: "{valid_report}"

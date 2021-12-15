@@ -36,6 +36,7 @@ def prepare(
     dataset: tf.data.Dataset,
     batch_size: int,
     sizes: Tuple[int],
+    keys: Tuple[str],
     classes: int,
     task: str = 'classification',
     augmentation: Optional[Dict[str, str]] = None,
@@ -53,7 +54,7 @@ def prepare(
   aug_policy = augmentation['policy']
   aug_config = augmentation['config']
 
-  task = partial(tasks.get(task), classes=classes, sizes=sizes)
+  task = partial(tasks.get(task), classes=classes, sizes=sizes, keys=keys)
   aug_policy = augment.get(aug_policy)
   aug_policy = partial(
     aug_policy,
@@ -92,6 +93,13 @@ def load_and_prepare(
 
 def classes(info):
   labels_key = [k for k in info.features.keys() if k.startswith('label')]
+
+  if info.name == 'cityscapes':
+    labels = ['road','sidewalk','parking','rail track','building','wall','fence','guard rail','bridge',
+              'tunnel','pole','polegroup','traffic light','traffic sign','vegetation','terrain','sky',
+              'person','rider','car','truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
+
+    return np.asarray(labels)
 
   if not labels_key:
     raise ValueError(f'Cannot extract labels from {info}.')

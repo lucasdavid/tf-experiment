@@ -68,9 +68,7 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   # endregion
 
   # region Dataset
-  train, valid, test, info = core.datasets.tfds.load_and_prepare(
-      dataset, randgen=R
-  )
+  train, valid, test, info = core.datasets.tfds.load_and_prepare(dataset, randgen=R)
   classes = core.datasets.tfds.classes(info)
   # endregion
 

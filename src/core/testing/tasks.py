@@ -60,7 +60,7 @@ def classification_multilabel(
 
   return {
     **metrics.binary(labels, predictions),
-    **metrics.ml_classification(labels, probabilities)
+    **metrics.ml_classification(labels, probabilities, predictions)
   }
 
 

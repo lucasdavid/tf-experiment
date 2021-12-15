@@ -30,7 +30,7 @@ def classification(y, p, preds):
   }
 
 
-def ml_classification(y, p):
+def ml_classification(y, p, predictions):
   try:
     roc_auc = skmetrics.roc_auc_score(y, p, average=None)
   except ValueError:
@@ -38,7 +38,7 @@ def ml_classification(y, p):
 
   return {
     'auc_score': roc_auc,
-    'confusion_matrix': skmetrics.multilabel_confusion_matrix(y, p).tolist()
+    'confusion_matrix': skmetrics.multilabel_confusion_matrix(y, predictions).tolist()
   }
 
 

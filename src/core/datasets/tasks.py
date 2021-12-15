@@ -14,16 +14,50 @@
 
 import tensorflow as tf
 
-def classification(entry, classes, sizes):
-  image, label = entry['image'], entry['label']
+def classification(entry, classes, sizes, keys):
+  data_key, target_key = keys
+  image, label = entry[data_key], entry[target_key]
 
   if sizes is not None:
     image, _ = adjust_resolution(image, sizes)
 
   return image, label
 
-def classification_multilabel_from_detection(entry, classes, sizes):
-  image, label = entry['image'], entry['objects']['label']
+def classification_multilabel_from_detection(entry, classes, sizes, keys):
+  data_key, target_key = keys
+  image, label = entry[data_key], entry['objects'][target_key]
+
+  label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
+
+  if sizes is not None:
+    image, _ = adjust_resolution(image, sizes)
+
+  return image, label
+
+
+def classification_multilabel_from_segmentation(entry, classes, sizes, keys):
+  data_key, target_key = keys
+  image, label = entry[data_key], entry[target_key]
+
+  label = tf.reshape(label, [-1])
+  label = tf.unique(label)[0]
+  label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
+
+  if sizes is not None:
+    image, _ = adjust_resolution(image, sizes)
+
+  return image, label
+
+
+def classification_multilabel_from_segmentation_cityscapes(entry, classes, sizes, keys):
+  data_key, target_key = keys
+  image, label = entry[data_key], entry[target_key]
+
+  label = tf.reshape(label, [-1])
+  label = tf.unique(label)[0] - 7
+
+  valid = (label >= 0) & (label < classes)
+  label = label[valid]
 
   label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
 
