@@ -15,20 +15,21 @@
 from typing import Optional
 
 import tensorflow as tf
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Activation, Dense, Dropout
 
 
 def head(
     input_tensor: tf.Tensor,
     backbone: tf.keras.Model,
     units: int,
-    activation: Optional[str] = None,
+    activation: Optional[str] = 'linear',
     dropout_rate: Optional[float] = None,
     name: str = None,
 ):
   y = backbone(input_tensor)
-  y = Dropout(rate=dropout_rate, name='top_dropout')(y)
-  y = Dense(units, activation=activation, name='predictions')(y)
+  y = Dropout(rate=dropout_rate, name='head/drop')(y)
+  y = Dense(units, activation=activation, name='head/logits')(y)
+  y = Activation(activation, dtype='float32', name='head/predictions')(y)
 
   return tf.keras.Model(
     inputs=input_tensor,

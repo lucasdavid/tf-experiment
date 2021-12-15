@@ -41,15 +41,6 @@ def train_or_restore(
   print('-' * 32)
   print('Training Classification Head')
 
-  if not perform:
-    print(
-        'Training will be skipped (perform=false). Attempting to load '
-        f'previously trained model from "{paths["export"]}"'
-    )
-
-    nn = tf.keras.models.load(paths['export'])
-    return nn, None
-
   with distributed.scope():
     loss = tf.losses.get(loss)
     optimizer = tf.optimizers.get(dict(optimizer))
@@ -59,50 +50,58 @@ def train_or_restore(
 
   histories = []
 
-  try:
-    nn.fit(
-        train,
-        validation_data=valid,
-        callbacks=cb_deserialize(callbacks, run_params),
-        **config
-    )
-  except KeyboardInterrupt:
-    print('\n  interrupted')
+  if perform:
+    try:
+      nn.fit(
+          train,
+          validation_data=valid,
+          callbacks=cb_deserialize(callbacks, run_params),
+          **config
+      )
+    except KeyboardInterrupt:
+      print('\n  interrupted')
+    else:
+      print('\n  done')
+
+    histories += nn.history.history
   else:
-    print('\n  done')
+    print('Training will be skipped (perform=false). Attempting to load '
+          f'previously trained model from "{paths["best"]}"')
 
-  histories += nn.history.history
+  if finetune['perform']:
+    print('-' * 32)
+    print('Fine-Tuning Entire Network')
 
-  print('-' * 32)
-  print('Fine-Tuning Entire Network')
+    with distributed.scope():
+      nn.load_weights(paths['best'])
+
+    unfreeze_top_layers(backbone, **finetune['unfreeze'])
+
+    with distributed.scope():
+      optimizer = tf.optimizers.get(dict(finetune['optimizer']))
+      nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+
+    try:
+      nn.fit(
+          train,
+          validation_data=valid,
+          callbacks=cb_deserialize(finetune['callbacks'], run_params),
+          **finetune['config']
+      )
+    except KeyboardInterrupt:
+      print('\n  interrupted')
+    else:
+      print('\n  done')
+
+    histories += nn.history.history
+  else:
+    print('fine-tuning will be skipped (finetune.perform=false)')
 
   with distributed.scope():
     nn.load_weights(paths['best'])
-
-  unfreeze_top_layers(backbone, **finetune['unfreeze'])
-
-  with distributed.scope():
-    optimizer = tf.optimizers.get(dict(finetune['optimizer']))
-    nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-
-  try:
-    nn.fit(
-        train,
-        validation_data=valid,
-        callbacks=cb_deserialize(finetune['callbacks'], run_params),
-        **finetune['config']
-    )
-  except KeyboardInterrupt:
-    print('\n  interrupted')
-  else:
-    print('\n  done')
-
-  histories += nn.history.history
-
-  with distributed.scope():
-    nn.load_weights(paths['best'])
-  nn.save(paths['export'], save_format='tf')
   
+  nn.save(paths['export'], save_format='tf')
+
   try:
     if os.path.isfile(paths['best']):
       os.remove(paths['best'])

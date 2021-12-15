@@ -1,5 +1,7 @@
 setup:
   tf_seed: 41820
+  precision_policy: mixed_float16
+  gpus_with_memory_growth: true
   paths:
     data: &paths_data "/scratch/lerdl/lucas.david/datasets/"
     tensorboard: "{report_dir}"
@@ -17,7 +19,7 @@ dataset:
       - validation
       - train_extra
   prepare:
-    batch_size: 64
+    batch_size: 128
     sizes: [512, 1024]
     buffer_size: auto
     parallel_calls: auto
@@ -105,7 +107,7 @@ training:
         backup_dir: paths.ckpt
   finetune:
     unfreeze:
-      layers: 'conv5_block1_1_conv'
+      layers: 'conv4_block10_out'
       freeze_bn: true
     optimizer:
       class_name: sgd

@@ -56,13 +56,18 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   _log.info(__doc__)
 
   # region Setup
-  run_params = core.utils.get_run_params(_run)
+  if 'precision_policy' in setup and setup['precision_policy']:
+    precision_policy = tf.keras.mixed_precision.Policy(setup['precision_policy'])
+    tf.keras.mixed_precision.set_global_policy(precision_policy)
 
-  core.boot.gpus_with_memory_growth()
+  if setup['gpus_with_memory_growth']:
+    core.boot.gpus_with_memory_growth()
+  
   DS = core.boot.appropriate_distributed_strategy()
   R = tf.random.Generator.from_seed(setup['tf_seed'], alg='philox')
-  PATHS = {k: v.format(**run_params) for k, v in setup['paths'].items()}
 
+  run_params = core.utils.get_run_params(_run)
+  PATHS = {k: v.format(**run_params) for k, v in setup['paths'].items()}
   for p, v in PATHS.items():
     run_params[f'paths.{p}'] = v
   # endregion
