@@ -26,12 +26,12 @@ def report(
     report_path: str = None,
     classes: List[str] = None,
 ):
-  task = tasks.get(task)
-  evaluations = task(target_and_output, classes=classes)
+  task_fn = tasks.get(task)
+  evaluations = task_fn(target_and_output, classes=classes)
   evaluations = pd.DataFrame(evaluations)
 
   evaluations.to_csv(report_path, index=False)
   
   print('-' * 32)
-  print(task.replace('_', ' ').capitalize(), 'Report')
+  print(str(task).replace('_', ' ').capitalize(), 'Report')
   print(evaluations.round(4))

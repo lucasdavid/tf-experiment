@@ -8,6 +8,7 @@ tensorflow
 tensorflow-datasets
 tensorflow-addons
 h5py
+imgaug
 
 scikit-learn
 scikit-image

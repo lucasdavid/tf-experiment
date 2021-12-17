@@ -1,17 +1,19 @@
 setup:
   tf_seed: 41820
+  precision_policy: mixed_float16
+  gpus_with_memory_growth: true
   paths:
-    data: "./data"
+    data: &paths_data "/scratch/lerdl/lucas.david/datasets/"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./models/voc07/backup/"
+    ckpt: "/scratch/lerdl/lucas.david/logs/voc07/baseline/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
     name: "voc/2007"
-    data_dir: "./data/"
+    data_dir: *paths_data
     splits:
       - train
       - validation
@@ -28,14 +30,28 @@ dataset:
       - image
       - label
     augmentation:
-      policy: true
-      config:
-        brightness_delta: 0.2
-        saturation_lower: 0.5
-        saturation_upper: 1.0
-        contrast_lower: 0.5
-        contrast_upper: 1.5
-        hue_delta: 0.0
+      over: batches
+      as_numpy: true
+      policy:
+        ## RandAug
+        class_name: RandAug
+        config:
+          over: batches
+          as_numpy: true
+      ## Simple augmentation
+      # class_name: simple
+      # config:
+      #   over: samples
+      #   as_numpy: false
+      #   constraints:
+      #     brightness_delta: 0.2
+      #     saturation_lower: 0.5
+      #     saturation_upper: 1.0
+      #     contrast_lower: 0.5
+      #     contrast_upper: 1.5
+      #     hue_delta: 0.0
+      ## No augmentation
+      # default
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   input_shape: [512, 512, 3]
@@ -45,7 +61,7 @@ model:
     activation: sigmoid
     dropout_rate: 0.2
   backbone:
-    architecture: ResNet50V2
+    architecture: ResNet101V2
     weights: imagenet
     pooling: avg
     trainable: false

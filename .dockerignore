@@ -132,4 +132,4 @@ dmypy.json
 
 data
 logs/
-models/
+/models/

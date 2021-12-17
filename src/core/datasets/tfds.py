@@ -19,8 +19,8 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from . import augment, tasks
-from ..utils import get_preprocess_fn
+from . import tasks
+from .. import augment, utils
 
 
 def load(name, data_dir, splits=('train', 'test')):
@@ -51,25 +51,38 @@ def prepare(
   if parallel_calls == 'auto':
     parallel_calls = tf.data.AUTOTUNE
 
-  aug_policy = augmentation['policy']
-  aug_config = augmentation['config']
+  ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes, keys=keys),
+                   num_parallel_calls=parallel_calls)
 
-  task = partial(tasks.get(task), classes=classes, sizes=sizes, keys=keys)
-  aug_policy = augment.get(aug_policy)
-  aug_policy = partial(
-    aug_policy,
+  augment.get(augmentation)
+
+  aug_policy = augmentation.get('policy')
+  aug_config = augmentation.get('config')
+  aug_over = augmentation.get('over')
+  aug_as_numpy = augmentation.get('as_numpy')
+
+  aug_policy_filled = partial(
+    augment.get(aug_policy),
     aug_config=aug_config,
     randgen=randgen,
-    preprocess_fn=get_preprocess_fn(preprocess_fn)
+    preprocess_fn=utils.get_preprocess_fn(preprocess_fn)
   )
 
-  return (
-    dataset
-    .map(lambda entry: aug_policy(*task(entry)), num_parallel_calls=parallel_calls)
-    .batch(batch_size, drop_remainder=drop_remainder)
-    .take(10)
-    .prefetch(buffer_size)
-  )
+  if aug_as_numpy:
+    aug_policy_fn = lambda x, y: (tf.py_function(aug_policy_filled, [x, y], [tf.float32, tf.float32]))
+  else:
+    aug_policy_fn = aug_policy_filled
+
+  if aug_over == 'samples':
+    ds = (ds.map(aug_policy_fn, num_parallel_calls=parallel_calls)
+            .batch(batch_size, drop_remainder=drop_remainder))
+  elif aug_over == 'batches':
+    ds = (ds.batch(batch_size, drop_remainder=drop_remainder)
+            .map(aug_policy_fn, num_parallel_calls=parallel_calls))
+  else:
+    raise ValueError(f'Illegal value "{aug_over}" for augmentation.over config.')
+
+  return ds.prefetch(buffer_size)
 
 
 def load_and_prepare(
