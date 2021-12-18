@@ -95,8 +95,8 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   evaluations = core.testing.evaluate(
     model,
     test,
-    classes=core.datasets.tfds.classes(info),
     task=evaluation['task'],
+    classes=core.datasets.tfds.classes(info),
   )
 
   evaluations.to_csv(evaluation['report_path'].format(**paths), index=False)

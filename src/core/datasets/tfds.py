@@ -53,22 +53,27 @@ def prepare(
 
   ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes[:2], keys=keys),
                    num_parallel_calls=parallel_calls)
-
-  (in_shape, out_shape) = infer_shapes_from_task(task, sizes, classes, batch_size, drop_remainder)
+  
+  # (in_shape, out_shape) = infer_shapes_from_task(task, sizes, classes, batch_size, drop_remainder)
 
   aug_policy = augment.get(augmentation['policy'])
   args = dict(
     num_parallel_calls=parallel_calls,
     as_numpy=augmentation.get('as_numpy'),
-    output_shapes=(in_shape, out_shape)
+    element_spec=ds.element_spec
+  )
+
+  padded_shapes = (
+    ds.element_spec[0].shape[1:],
+    ds.element_spec[1].shape[1:],
   )
 
   aug_over = augmentation.get('over', 'samples')
   if aug_over == 'samples':
     ds = aug_policy.augment_dataset(ds, **args)
-    ds = ds.padded_batch(batch_size, padded_shapes=(in_shape[1:], out_shape[1:]), drop_remainder=drop_remainder)
+    ds = ds.padded_batch(batch_size, padded_shapes=padded_shapes, drop_remainder=drop_remainder)
   elif aug_over == 'batches':
-    ds = ds.padded_batch(batch_size, padded_shapes=(in_shape[1:], out_shape[1:]), drop_remainder=drop_remainder)
+    ds = ds.padded_batch(batch_size, padded_shapes=padded_shapes, drop_remainder=drop_remainder)
     ds = aug_policy.augment_dataset(ds, **args)
   else:
     raise ValueError(f'Illegal value "{aug_over}" for augmentation.over config.')

@@ -1,3 +1,4 @@
+from typing import Tuple
 import tensorflow as tf
 
 
@@ -19,16 +20,12 @@ class Default:
       dataset: tf.data.Dataset,
       num_parallel_calls: int = None,
       as_numpy: bool = False,
-      output_shapes = None,
+      element_spec: Tuple[tf.TensorSpec] = None,
   ) -> tf.data.Dataset:
     if not as_numpy:
       return dataset.map(self.call, num_parallel_calls=num_parallel_calls)
-    
-    def augment_as_numpy(x, y):
-      x, y = tf.py_function(self.call, inp=[x, y], Tout=[tf.float32, tf.float32])
-      x = tf.ensure_shape(x, output_shapes[0])
-      y = tf.ensure_shape(y, output_shapes[1])
 
-      return x, y
-
-    return dataset.map(augment_as_numpy, num_parallel_calls=num_parallel_calls)
+    return dataset.map(
+      lambda x, y: tf.py_function(self.call, inp=[x, y], Tout=element_spec),
+      num_parallel_calls=num_parallel_calls
+    )

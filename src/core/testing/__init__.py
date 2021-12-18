@@ -31,7 +31,7 @@ def evaluate(
   print(f'Evaluation {str(task)}')
 
   try:
-    report(target_and_output(model, dataset), task, classes)
+    return report(target_and_output(model, dataset), task, classes)
   except KeyboardInterrupt:
     print('\ninterrupted')
 
