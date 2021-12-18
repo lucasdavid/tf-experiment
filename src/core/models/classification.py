@@ -28,7 +28,7 @@ def head(
 ):
   y = backbone(input_tensor)
   y = Dropout(rate=dropout_rate, name='head/drop')(y)
-  y = Dense(units, activation=activation, name='head/logits')(y)
+  y = Dense(units, name='head/logits')(y)
   y = Activation(activation, dtype='float32', name='head/predictions')(y)
 
   return tf.keras.Model(
