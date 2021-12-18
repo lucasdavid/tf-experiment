@@ -46,6 +46,9 @@ model:
     units: *classes
     activation: softmax
     dropout_rate: 0.2
+    kernel_regularizer: null
+    kernel_initializer: null
+    layer_class: 'dense'
   backbone:
     architecture: ResNet50V2
     weights: imagenet

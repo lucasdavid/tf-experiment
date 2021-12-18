@@ -17,6 +17,28 @@ from typing import Optional
 import tensorflow as tf
 from tensorflow.keras.layers import Activation, Dense, Dropout
 
+from .. import regularizers
+
+
+class DenseKU(Dense):
+  """Dense layer with kernel usage regularization.
+  """
+  def call(self, inputs):
+    kernel = self.kernel
+    ag = kernel
+    ag = ag - tf.reduce_max(ag, axis=-1, keepdims=True)
+    ag = tf.nn.softmax(ag)
+
+    outputs = tf.matmul(a=inputs, b=ag * kernel)
+
+    if self.use_bias:
+      outputs = tf.nn.bias_add(outputs, self.bias)
+
+    if self.activation is not None:
+      outputs = self.activation(outputs)
+
+    return outputs
+
 
 def head(
     input_tensor: tf.Tensor,
@@ -24,11 +46,19 @@ def head(
     units: int,
     activation: Optional[str] = 'linear',
     dropout_rate: Optional[float] = None,
+    layer_class: str = None,
+    kernel_initializer: str = None,
+    kernel_regularizer: str = None,
     name: str = None,
 ):
   y = backbone(input_tensor)
   y = Dropout(rate=dropout_rate, name='head/drop')(y)
-  y = Dense(units, name='head/logits')(y)
+  y = get(layer_class)(
+    units,
+    name='head/logits',
+    kernel_initializer=kernel_initializer,
+    kernel_regularizer=regularizers.get(kernel_regularizer)
+  )(y)
   y = Activation(activation, dtype='float32', name='head/predictions')(y)
 
   return tf.keras.Model(
@@ -36,3 +66,16 @@ def head(
     outputs=y,
     name=name
   )
+
+
+def get(identifier):
+  if not identifier:
+    return tf.keras.layers.Dense
+  
+  identifier = str(identifier).lower()
+  if identifier == 'dense':
+    return tf.keras.layers.Dense
+  if identifier == 'kernel_usage':
+    return DenseKU
+  
+  raise ValueError(f'Cannot retrieve a classification layer for identifier {identifier}')
