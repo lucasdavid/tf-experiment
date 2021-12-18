@@ -4,6 +4,9 @@ pandas
 PyYAML
 sacred
 
+matplotlib
+seaborn
+
 tensorflow
 tensorflow-datasets
 tensorflow-addons

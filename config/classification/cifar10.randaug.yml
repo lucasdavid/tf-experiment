@@ -31,18 +31,13 @@ dataset:
       - label
     augmentation:
       policy:
-        class_name: Simple
+        class_name: RandAug
         config:
-          random_generator: 10391
-          constraints:
-            brightness_delta: 0.2
-            saturation_lower: 0.5
-            saturation_upper: 1.0
-            contrast_lower: 0.5
-            contrast_upper: 1.5
-            hue_delta: 0.0
-      over: samples
-      as_numpy: false
+          n: 3
+          m: 7
+          seed: 10344
+      over: batches
+      as_numpy: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   input_shape: [32, 32, 3]
