@@ -54,34 +54,28 @@ def prepare(
   ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes[:2], keys=keys),
                    num_parallel_calls=parallel_calls)
   
-  # (in_shape, out_shape) = infer_shapes_from_task(task, sizes, classes, batch_size, drop_remainder)
-
+  shapes = tuple(s.shape for s in ds.element_spec)
+  aug_over = augmentation.get('over', 'samples')
   aug_policy = augment.get(augmentation['policy'])
-  args = dict(
+  aug_parameters = dict(
     num_parallel_calls=parallel_calls,
     as_numpy=augmentation.get('as_numpy'),
     element_spec=ds.element_spec
   )
 
-  padded_shapes = (
-    ds.element_spec[0].shape[1:],
-    ds.element_spec[1].shape[1:],
-  )
-
-  aug_over = augmentation.get('over', 'samples')
   if aug_over == 'samples':
-    ds = aug_policy.augment_dataset(ds, **args)
-    ds = ds.padded_batch(batch_size, padded_shapes=padded_shapes, drop_remainder=drop_remainder)
+    ds = aug_policy.augment_dataset(ds, **aug_parameters)
+    ds = ds.padded_batch(batch_size, padded_shapes=shapes, drop_remainder=drop_remainder)
   elif aug_over == 'batches':
-    ds = ds.padded_batch(batch_size, padded_shapes=padded_shapes, drop_remainder=drop_remainder)
-    ds = aug_policy.augment_dataset(ds, **args)
+    ds = ds.padded_batch(batch_size, padded_shapes=shapes, drop_remainder=drop_remainder)
+    ds = aug_policy.augment_dataset(ds, **aug_parameters)
   else:
     raise ValueError(f'Illegal value "{aug_over}" for augmentation.over config.')
 
   if take: ds = ds.take(take)
   if preprocess_fn:
     preprocess_fn = utils.get_preprocess_fn(preprocess_fn)
-    ds = ds.map(lambda x, y: (preprocess_fn(x), y), num_parallel_calls=parallel_calls)
+    ds = ds.map(lambda x, y: (preprocess_fn(tf.cast(x, tf.float32)), y), num_parallel_calls=parallel_calls)
 
   return ds.prefetch(buffer_size)
 
