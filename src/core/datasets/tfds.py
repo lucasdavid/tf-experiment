@@ -111,23 +111,3 @@ def classes(info):
     classes = classes.feature._str2int.keys()
 
   return np.asarray(list(classes))
-
-
-def infer_shapes_from_task(
-  task: str,
-  sizes: Tuple[int],
-  classes: int,
-  batch_size: int,
-  drop_remainder: bool,
-) -> Tuple[Tuple[int], Tuple[int]]:
-  if not drop_remainder:
-    batch_size = None
-
-  in_s = [batch_size, *sizes]
-  out_s = [batch_size]
-
-  if task != 'classification':
-    # Any dense or one-hot targete
-    out_s += [classes]
-
-  return (in_s, out_s)
