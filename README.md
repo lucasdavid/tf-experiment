@@ -1,4 +1,4 @@
-# Attention-and-Saliency-Based Segmentation
+Salient Segmentation
 
 Tensorflow implementation of attention-and-saliency-based-segmentation.
 
