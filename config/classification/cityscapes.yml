@@ -50,6 +50,9 @@ model:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
+    kernel_regularizer: null
+    kernel_initializer: null
+    layer_class: dense
   backbone:
     architecture: ResNet101V2
     weights: imagenet
@@ -112,7 +115,7 @@ training:
   finetune:
     perform: true
     unfreeze:
-      layers: 'conv4_block10_out'
+      layers: conv4_block10_out
       freeze_bn: true
     optimizer:
       class_name: sgd

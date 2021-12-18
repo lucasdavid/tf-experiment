@@ -38,6 +38,10 @@ dataset:
           seed: 10344
       over: batches
       as_numpy: true
+    shuffle:
+      buffer_size: 1000
+      seed: 4081
+      reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   input_shape: [512, 512, 3]
@@ -46,6 +50,9 @@ model:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
+    kernel_regularizer: null
+    kernel_initializer: null
+    layer_class: dense
   backbone:
     architecture: ResNet101V2
     weights: imagenet

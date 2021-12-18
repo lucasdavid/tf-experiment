@@ -41,19 +41,23 @@ def prepare(
     take: Optional[int] = None,
     task: str = 'classification',
     augmentation: Optional[Dict[str, str]] = None,
-    buffer_size: Union[int, str] = 'auto',
+    prefetch_buffer_size: Union[int, str] = 'auto',
     parallel_calls: Union[int, str] = 'auto',
+    shuffle: Optional[Dict[str, Any]] = None,
     preprocess_fn: Callable = None,
     drop_remainder: bool = True,
 ):
-  if buffer_size == 'auto':
-    buffer_size = tf.data.AUTOTUNE
+  if prefetch_buffer_size == 'auto':
+    prefetch_buffer_size = tf.data.AUTOTUNE
   if parallel_calls == 'auto':
     parallel_calls = tf.data.AUTOTUNE
+  
+  if shuffle:
+    ds = dataset.shuffle(**shuffle)
 
   ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes[:2], keys=keys),
                    num_parallel_calls=parallel_calls)
-  
+
   shapes = tuple(s.shape for s in ds.element_spec)
   aug_over = augmentation.get('over', 'samples')
   aug_policy = augment.get(augmentation['policy'])
@@ -77,7 +81,7 @@ def prepare(
     preprocess_fn = utils.get_preprocess_fn(preprocess_fn)
     ds = ds.map(lambda x, y: (preprocess_fn(tf.cast(x, tf.float32)), y), num_parallel_calls=parallel_calls)
 
-  return ds.prefetch(buffer_size)
+  return ds.prefetch(prefetch_buffer_size)
 
 
 def load_and_prepare(

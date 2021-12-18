@@ -36,7 +36,6 @@ Example outline:
 import tensorflow as tf
 from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
-from tensorflow_datasets.core.utils.type_utils import Key
 
 import core
 

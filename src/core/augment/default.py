@@ -20,7 +20,7 @@ class Default:
 
     return dataset.map(
       lambda x, y: (
-        tf.ensure_shape(tf.py_function(self.augment, inp=[x], Tout=element_spec[0]),
+        tf.ensure_shape(tf.py_function(self.augment, inp=[x], Tout=element_spec[0].dtype),
                         element_spec[0].shape),
         y),
       num_parallel_calls=num_parallel_calls)
