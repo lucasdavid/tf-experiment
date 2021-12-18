@@ -1,70 +1,76 @@
 setup:
-  tf_seed: 421
+  tf_seed: 41820
+  precision_policy: mixed_float16
+  gpus_with_memory_growth: true
   paths:
-    data: "./data"
+    data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./models/cifar10/backup/"
+    ckpt: "./logs/voc12/baseline/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
-    name: cifar10
-    data_dir: "./data/"
+    name: "voc/2012"
+    data_dir: *paths_data
     splits:
-      - train[:80%]
-      - train[80%:]
-      - test
+      - train
+      - validation
+      - validation
   prepare:
     batch_size: 64
-    sizes: [32, 32]
+    sizes: [512, 512, 3]
     buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
-    task: classification
-    classes: &classes 10
+    task: classification_multilabel_from_detection
+    classes: &classes 20
     keys:
       - image
       - label
     augmentation:
-      policy: true
-      config:
-        brightness_delta: 0.2
-        saturation_lower: 0.5
-        saturation_upper: 1.0
-        contrast_lower: 0.5
-        contrast_upper: 1.5
-        hue_delta: 0.0
+      policy:
+        class_name: Simple
+        config:
+          random_generator: 10391
+          constraints:
+            brightness_delta: 0.2
+            saturation_lower: 0.5
+            saturation_upper: 1.0
+            contrast_lower: 0.5
+            contrast_upper: 1.5
+            hue_delta: 0.0
+      over: samples
+      as_numpy: false
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  input_shape: [32, 32, 3]
+  input_shape: [512, 512, 3]
   head:
-    name: rn50_clf_cifar10
+    name: voc12_ml
     units: *classes
-    activation: softmax
+    activation: sigmoid
     dropout_rate: 0.2
   backbone:
-    architecture: ResNet50V2
+    architecture: ResNet101V2
     weights: imagenet
     pooling: avg
     trainable: false
 training:
   perform: true
-  loss: SparseCategoricalCrossentropy
+  loss: BinaryCrossentropy
   optimizer:
     class_name: sgd
     config: &momentum
-      learning_rate: 0.1
+      learning_rate: 0.01
       momentum: 0.9
       nesterov: true
   metrics:
-    - SparseCategoricalAccuracy
-    - SparseTopKCategoricalAccuracy
-    # - precision
-    # - recall
+    - BinaryAccuracy
+    - Precision
+    - Recall
   config:
-    epochs: &epochs 2
+    epochs: &epochs 50
     verbose: 1
   callbacks: &callbacks
     - TerminateOnNaN
@@ -114,9 +120,9 @@ training:
         <<: *momentum
         learning_rate: 0.001
     config:
-      epochs: 4
+      epochs: 100
       initial_epoch: *epochs
     callbacks: *callbacks
 evaluation:
-  task: sparse_classification_multiclass
+  task: classification_multilabel
   report_path: "{valid_report}"

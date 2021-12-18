@@ -1,0 +1,129 @@
+setup:
+  tf_seed: 41820
+  precision_policy: mixed_float16
+  gpus_with_memory_growth: true
+  paths:
+    data: &paths_data "/scratch/lerdl/lucas.david/datasets/"
+    tensorboard: "{report_dir}"
+    best: "{report_dir}/best.h5"
+    ckpt: "/scratch/lerdl/lucas.david/logs/cityscapes/baseline/backup/"
+    export: "{report_dir}/final"
+    train_history: "{report_dir}/train-history.csv"
+    valid_report: "{report_dir}/valid-report.csv"
+dataset:
+  load:
+    name: "cityscapes/semantic_segmentation_extra"
+    data_dir: *paths_data
+    splits:
+      - train
+      - validation
+      - train_extra
+  prepare:
+    batch_size: 64
+    sizes: [512, 1024, 3]
+    buffer_size: auto
+    parallel_calls: auto
+    drop_remainder: true
+    task: classification_multilabel_from_segmentation_cityscapes
+    classes: &classes 27
+    keys:
+      - image_left
+      - segmentation_label
+    augmentation:
+      class_name: Simple
+        config:
+          random_generator: 10391
+          constraints:
+            brightness_delta: 0.2
+            saturation_lower: 0.5
+            saturation_upper: 1.0
+            contrast_lower: 0.5
+            contrast_upper: 1.5
+            hue_delta: 0.0
+      over: samples
+      as_numpy: false
+    preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+model:
+  input_shape: [512, 1024, 3]
+  head:
+    name: rn101_cityscapes_ml
+    units: *classes
+    activation: sigmoid
+    dropout_rate: 0.2
+  backbone:
+    architecture: ResNet101V2
+    weights: imagenet
+    pooling: avg
+    trainable: false
+training:
+  perform: true
+  loss: BinaryCrossentropy
+  optimizer:
+    class_name: sgd
+    config: &momentum
+      learning_rate: 0.01
+      momentum: 0.9
+      nesterov: true
+  metrics:
+    - BinaryAccuracy
+    - Precision
+    - Recall
+  config:
+    epochs: &epochs 50
+    verbose: 2
+  callbacks: &callbacks
+    - TerminateOnNaN
+    - class_name: EarlyStopping
+      config:
+        patience: 50
+        verbose: 1
+    - class_name: ReduceLROnPlateau
+      config:
+        factor: 0.5
+        patience: 10
+        verbose: 1
+    - class_name: TensorBoard
+      config:
+        log_dir: "./logs/"
+        histogram_freq: 1
+        profile_batch: 0
+        write_graph: true
+      override:
+        log_dir: paths.tensorboard
+    - class_name: CSVLogger
+      config:
+        filename: "./history.csv"
+        append: true
+      override:
+        filename: paths.train_history
+    - class_name: ModelCheckpoint
+      config:
+        verbose: 1
+        filepath: "./best.h5"
+        save_best_only: true
+        save_weights_only: true
+      override:
+        filepath: paths.best
+    - class_name: BackupAndRestore
+      config:
+        backup_dir: "/tmp/ckpt"
+      override:
+        backup_dir: paths.ckpt
+  finetune:
+    perform: true
+    unfreeze:
+      layers: 'conv4_block10_out'
+      freeze_bn: true
+    optimizer:
+      class_name: sgd
+      config:
+        <<: *momentum
+        learning_rate: 0.001
+    config:
+      epochs: 300
+      initial_epoch: *epochs
+      verbose: 2
+    callbacks: *callbacks
+evaluation:
+  task: classification_multilabel
+  report_path: "{valid_report}"

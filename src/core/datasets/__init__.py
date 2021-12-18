@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import tfds
+from . import cityscapes_small, tfds
 
-__all__ = ['tfds']
+__all__ = [
+  'cityscapes_small',
+  'tfds',
+]

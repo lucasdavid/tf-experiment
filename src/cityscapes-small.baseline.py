@@ -18,7 +18,7 @@ Example outline:
 
   TFDS dataset → images → ResNet50 → softmax → predictions
 
-  The {dataset.name} dataset is loaded from TFDS, and a 
+  The Cityscapes dataset is loaded from TFDS, and a 
   {dataset.prepare.task} is extracted from it, resulting in a
   `tf.data.Dataset` containing the supervision pair (images, labels).
 
@@ -33,12 +33,17 @@ Example outline:
   The model is evaluated.
 """
 
+from typing import Dict
+
 import tensorflow as tf
 from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
-from tensorflow_datasets.core.utils.type_utils import Key
 
 import core
+
+DS: tf.distribute.Strategy = None
+R: tf.random.Generator = None
+PATHS: Dict[str, str] = None
 
 ex = Experiment(save_git_info=False)
 ex.captured_out_filter = apply_backspaces_and_linefeeds
@@ -46,6 +51,8 @@ ex.captured_out_filter = apply_backspaces_and_linefeeds
 
 @ex.main
 def run(setup, dataset, model, training, evaluation, _log, _run):
+  global DS, R, PATHS
+
   _log.info(__doc__)
 
   # region Setup
@@ -56,24 +63,22 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   if setup['gpus_with_memory_growth']:
     core.boot.gpus_with_memory_growth()
   
-  strategy = core.boot.appropriate_distributed_strategy()
+  DS = core.boot.appropriate_distributed_strategy()
+  R = tf.random.Generator.from_seed(setup['tf_seed'], alg='philox')
 
   run_params = core.utils.get_run_params(_run)
-  paths = {k: v.format(**run_params) for k, v in setup['paths'].items()}
-  for p, v in paths.items():
+  PATHS = {k: v.format(**run_params) for k, v in setup['paths'].items()}
+  for p, v in PATHS.items():
     run_params[f'paths.{p}'] = v
   # endregion
 
   # region Dataset
-  train, valid, test, info = core.datasets.tfds.load_and_prepare(dataset)
-
-  to_file = f'{run_params["report_dir"]}/images.jpg'
-  (x, y), = train.take(1).as_numpy_iterator()
-  core.utils.visualize((127.5*(x+1.)).astype('uint8'), rows=4, figsize=(20, 4), to_file=to_file)
+  train, valid, test, info = core.datasets.cityscapes_small.load_and_prepare(dataset, randgen=R)
+  classes = core.datasets.cityscapes_small.classes(info)
   # endregion
 
   # region Model
-  with strategy.scope():
+  with DS.scope():
     inputs = tf.keras.Input(model['input_shape'], name='images')
     backbone = core.models.backbone.get(inputs, **model['backbone'])
     model = core.models.classification.head(inputs, backbone, **model['head'])
@@ -82,24 +87,25 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
 
   # region Training and Evaluation
   model, histories = core.training.train_or_restore(
-    model,
-    backbone,
-    train,
-    valid,
-    run_params=run_params,
-    distributed=strategy,
-    paths=paths,
-    **training
+      model,
+      backbone,
+      train,
+      valid,
+      run_params=run_params,
+      distributed=DS,
+      paths=PATHS,
+      **training
   )
 
-  evaluations = core.testing.evaluate(
-    model,
-    test,
-    classes=core.datasets.tfds.classes(info),
-    task=evaluation['task'],
-  )
+  target_and_output = core.inference.target_and_output(model, test)
 
-  evaluations.to_csv(evaluation['report_path'].format(**paths), index=False)
+  core.testing.report(
+      target_and_output,
+      classes=classes,
+      run_params=run_params,
+      task=evaluation['task'],
+      report_path=evaluation['report_path'].format(**PATHS)
+  )
   # endregion
 
 

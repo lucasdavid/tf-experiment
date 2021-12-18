@@ -33,7 +33,7 @@ def deserialize(config, custom_objects=None):
   )
 
 
-def get(identifier):
+def get(identifier) -> Default:
   if isinstance(identifier, bool):
     identifier = 'Simple' if identifier else 'Default'
   if isinstance(identifier, dict):

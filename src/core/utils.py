@@ -34,7 +34,8 @@ def visualize(image,
               rows=2,
               cols=None,
               figsize=(16, 7.2),
-              cmap=None):
+              cmap=None,
+              to_file=None):
   import matplotlib.pyplot as plt
   import seaborn as sns
 
@@ -50,7 +51,14 @@ def visualize(image,
             image[ix],
             cmap=cmap,
             title=title[ix] if title is not None and len(title) > ix else None)
+      
       plt.tight_layout()
+      plt.subplots_adjust(wspace=0, hspace=0)
+
+      if to_file is not None:
+        print('saving graphics to', to_file)
+        plt.savefig(to_file)
+
       return
 
     if isinstance(image, tf.Tensor):
@@ -89,6 +97,13 @@ def unfreeze_top_layers(
 
   print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers. '
         f'Bottom-most is the {idx}-nth layer ({model.layers[idx].name}).')
+
+
+def try_to_load_weights(model, weights):
+  try:
+    model.load_weights(weights)
+  except FileNotFoundError:
+    print(f'Cannot restore weights from "{weights}".')
 
 
 def log_begin(fun_name, *args, **kwargs):

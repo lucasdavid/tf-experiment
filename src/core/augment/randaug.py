@@ -1,5 +1,3 @@
-from typing import Callable, Optional
-
 from imgaug import augmenters as iaa
 import imgaug as ia
 
@@ -14,9 +12,7 @@ class RandAug(Default):
       n: int = 3,
       m: int = 7,
       seed: int = 10482,
-      preprocess_fn: Optional[Callable] = None
   ):
-    super().__init__(preprocess_fn)
     self.rand_aug = iaa.RandAugment(n=n, m=m)
 
     ia.seed(seed)

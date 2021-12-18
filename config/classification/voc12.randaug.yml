@@ -1,24 +1,26 @@
 setup:
   tf_seed: 41820
+  precision_policy: mixed_float16
+  gpus_with_memory_growth: true
   paths:
-    data: "./data"
+    data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./models/voc12/backup/"
+    ckpt: "./logs/voc12/baseline/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
     name: "voc/2012"
-    data_dir: "./data/"
+    data_dir: *paths_data
     splits:
       - train
       - validation
-      - test
+      - validation
   prepare:
     batch_size: 64
-    sizes: [512, 512]
+    sizes: [512, 512, 3]
     buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
@@ -28,19 +30,19 @@ dataset:
       - image
       - label
     augmentation:
-      policy: true
-      config:
-        brightness_delta: 0.2
-        saturation_lower: 0.5
-        saturation_upper: 1.0
-        contrast_lower: 0.5
-        contrast_upper: 1.5
-        hue_delta: 0.0
+      policy:
+        class_name: RandAug
+        config:
+          n: 3
+          m: 7
+          seed: 10344
+      over: batches
+      as_numpy: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   input_shape: [512, 512, 3]
   head:
-    name: rn101_voc12_ml
+    name: voc12_ml
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
@@ -63,7 +65,7 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 2
+    epochs: &epochs 50
     verbose: 1
   callbacks: &callbacks
     - TerminateOnNaN
@@ -113,7 +115,7 @@ training:
         <<: *momentum
         learning_rate: 0.001
     config:
-      epochs: 4
+      epochs: 100
       initial_epoch: *epochs
     callbacks: *callbacks
 evaluation:

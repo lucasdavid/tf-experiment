@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Dict, Union
 from .default import Default
 
 import numpy as np
@@ -9,11 +9,12 @@ import tensorflow_addons as tfa
 class Simple(Default):
   def __init__(
       self,
-      random_generator: tf.random.Generator,
       constraints: Dict[str, Union[float, int]],
-      preprocess_fn: Optional[Callable] = None,
+      random_generator: Union[tf.random.Generator, int] = None,
   ):
-    super().__init__(preprocess_fn)
+    if isinstance(random_generator, int):
+      random_generator = tf.random.Generator.from_seed(random_generator, alg='philox')
+
     self.random_generator = random_generator
     self.constraints = constraints
   

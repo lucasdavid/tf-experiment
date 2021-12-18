@@ -6,57 +6,43 @@ setup:
     data: &paths_data "/scratch/lerdl/lucas.david/datasets/"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "/scratch/lerdl/lucas.david/logs/voc07/baseline/backup/"
+    ckpt: "/scratch/lerdl/lucas.david/logs/cityscapes/baseline/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
-    name: "voc/2007"
+    name: "cityscapes/semantic_segmentation_extra"
     data_dir: *paths_data
     splits:
       - train
       - validation
-      - test
+      - train_extra
   prepare:
-    batch_size: 64
-    sizes: [512, 512]
+    batch_size: 128
+    sizes: [512, 1024, 3]
     buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
-    task: classification_multilabel_from_detection
-    classes: &classes 20
+    task: classification_multilabel_from_segmentation_cityscapes
+    classes: &classes 27
     keys:
-      - image
-      - label
+      - image_left
+      - segmentation_label
     augmentation:
-      over: batches
-      as_numpy: true
-      policy:
-        ## RandAug
-        class_name: RandAug
-        config:
-          over: batches
-          as_numpy: true
-      ## Simple augmentation
-      # class_name: simple
-      # config:
-      #   over: samples
-      #   as_numpy: false
-      #   constraints:
-      #     brightness_delta: 0.2
-      #     saturation_lower: 0.5
-      #     saturation_upper: 1.0
-      #     contrast_lower: 0.5
-      #     contrast_upper: 1.5
-      #     hue_delta: 0.0
-      ## No augmentation
-      # default
+      policy: true
+      config:
+        brightness_delta: 0.2
+        saturation_lower: 0.5
+        saturation_upper: 1.0
+        contrast_lower: 0.5
+        contrast_upper: 1.5
+        hue_delta: 0.0
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  input_shape: [512, 512, 3]
+  input_shape: [512, 1024, 3]
   head:
-    name: rn50_clf_voc07
+    name: rn101_cityscapes_ml
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
@@ -79,8 +65,8 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 2
-    verbose: 1
+    epochs: &epochs 1
+    verbose: 2
   callbacks: &callbacks
     - TerminateOnNaN
     - class_name: EarlyStopping
@@ -121,7 +107,7 @@ training:
         backup_dir: paths.ckpt
   finetune:
     unfreeze:
-      layers: 'conv5_block1_1_conv'
+      layers: 'conv4_block10_out'
       freeze_bn: true
     optimizer:
       class_name: sgd
@@ -129,8 +115,9 @@ training:
         <<: *momentum
         learning_rate: 0.001
     config:
-      epochs: 4
+      epochs: 3
       initial_epoch: *epochs
+      verbose: 2
     callbacks: *callbacks
 evaluation:
   task: classification_multilabel

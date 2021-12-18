@@ -38,65 +38,58 @@ def prepare(
     sizes: Tuple[int],
     keys: Tuple[str],
     classes: int,
+    take: Optional[int] = None,
     task: str = 'classification',
     augmentation: Optional[Dict[str, str]] = None,
     buffer_size: Union[int, str] = 'auto',
     parallel_calls: Union[int, str] = 'auto',
     preprocess_fn: Callable = None,
     drop_remainder: bool = True,
-    randgen=None,
 ):
   if buffer_size == 'auto':
     buffer_size = tf.data.AUTOTUNE
   if parallel_calls == 'auto':
     parallel_calls = tf.data.AUTOTUNE
 
-  ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes, keys=keys),
+  ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes[:2], keys=keys),
                    num_parallel_calls=parallel_calls)
 
-  augment.get(augmentation)
+  (in_shape, out_shape) = infer_shapes_from_task(task, sizes, classes, batch_size, drop_remainder)
 
-  aug_policy = augmentation.get('policy')
-  aug_config = augmentation.get('config')
-  aug_over = augmentation.get('over')
-  aug_as_numpy = augmentation.get('as_numpy')
-
-  aug_policy_filled = partial(
-    augment.get(aug_policy),
-    aug_config=aug_config,
-    randgen=randgen,
-    preprocess_fn=utils.get_preprocess_fn(preprocess_fn)
+  aug_policy = augment.get(augmentation['policy'])
+  args = dict(
+    num_parallel_calls=parallel_calls,
+    as_numpy=augmentation.get('as_numpy'),
+    output_shapes=(in_shape, out_shape)
   )
 
-  if aug_as_numpy:
-    aug_policy_fn = lambda x, y: (tf.py_function(aug_policy_filled, [x, y], [tf.float32, tf.float32]))
-  else:
-    aug_policy_fn = aug_policy_filled
-
+  aug_over = augmentation.get('over', 'samples')
   if aug_over == 'samples':
-    ds = (ds.map(aug_policy_fn, num_parallel_calls=parallel_calls)
-            .batch(batch_size, drop_remainder=drop_remainder))
+    ds = aug_policy.augment_dataset(ds, **args)
+    ds = ds.padded_batch(batch_size, padded_shapes=(in_shape[1:], out_shape[1:]), drop_remainder=drop_remainder)
   elif aug_over == 'batches':
-    ds = (ds.batch(batch_size, drop_remainder=drop_remainder)
-            .map(aug_policy_fn, num_parallel_calls=parallel_calls))
+    ds = ds.padded_batch(batch_size, padded_shapes=(in_shape[1:], out_shape[1:]), drop_remainder=drop_remainder)
+    ds = aug_policy.augment_dataset(ds, **args)
   else:
     raise ValueError(f'Illegal value "{aug_over}" for augmentation.over config.')
+
+  if take: ds = ds.take(take)
+  if preprocess_fn:
+    preprocess_fn = utils.get_preprocess_fn(preprocess_fn)
+    ds = ds.map(lambda x, y: (preprocess_fn(x), y), num_parallel_calls=parallel_calls)
 
   return ds.prefetch(buffer_size)
 
 
 def load_and_prepare(
     config: Dict[str, Any],
-    randgen: tf.random.Generator,
 ):
-  parts, info = load(**config['load'])
+  tfds.disable_progress_bar()
 
+  splits, info = load(**config['load'])
   print(f'{info.name}: {info.description}')
-
-  train, valid, test = (
-      prepare(part, randgen=randgen, **config['prepare']) for part in parts
-  )
-
+  
+  train, valid, test = (prepare(s, **config['prepare']) for s in splits)
   print(f'train: {train}')
   print(f'valid: {valid}')
   print(f'test:  {test}')
@@ -106,13 +99,6 @@ def load_and_prepare(
 
 def classes(info):
   labels_key = [k for k in info.features.keys() if k.startswith('label')]
-
-  if info.name == 'cityscapes':
-    labels = ['road','sidewalk','parking','rail track','building','wall','fence','guard rail','bridge',
-              'tunnel','pole','polegroup','traffic light','traffic sign','vegetation','terrain','sky',
-              'person','rider','car','truck', 'bus', 'caravan', 'trailer', 'train', 'motorcycle', 'bicycle']
-
-    return np.asarray(labels)
 
   if not labels_key:
     raise ValueError(f'Cannot extract labels from {info}.')
@@ -126,3 +112,23 @@ def classes(info):
     classes = classes.feature._str2int.keys()
 
   return np.asarray(list(classes))
+
+
+def infer_shapes_from_task(
+  task: str,
+  sizes: Tuple[int],
+  classes: int,
+  batch_size: int,
+  drop_remainder: bool,
+) -> Tuple[Tuple[int], Tuple[int]]:
+  if not drop_remainder:
+    batch_size = None
+
+  in_s = [batch_size, *sizes]
+  out_s = [batch_size]
+
+  if task != 'classification':
+    # Any dense or one-hot targete
+    out_s += [classes]
+
+  return (in_s, out_s)

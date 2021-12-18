@@ -19,7 +19,7 @@ from typing import List
 import tensorflow as tf
 
 from .callbacks import get as cb_deserialize
-from .utils import unfreeze_top_layers
+from .utils import unfreeze_top_layers, try_to_load_weights
 
 
 def train_or_restore(
@@ -73,7 +73,7 @@ def train_or_restore(
     print('Fine-Tuning Entire Network')
 
     with distributed.scope():
-      nn.load_weights(paths['best'])
+      try_to_load_weights(nn, paths['best'])
 
     unfreeze_top_layers(backbone, **finetune['unfreeze'])
 
@@ -98,7 +98,7 @@ def train_or_restore(
     print('fine-tuning will be skipped (finetune.perform=false)')
 
   with distributed.scope():
-    nn.load_weights(paths['best'])
+    try_to_load_weights(nn, paths['best'])
   
   nn.save(paths['export'], save_format='tf')
 
