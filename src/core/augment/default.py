@@ -14,7 +14,9 @@ class Default:
       element_spec: Tuple[tf.TensorSpec] = None,
   ) -> tf.data.Dataset:
     if not as_numpy:
-      return dataset.map(self.call, num_parallel_calls=num_parallel_calls)
+      return dataset.map(
+        lambda x, y: (self.augment(x), y),
+        num_parallel_calls=num_parallel_calls)
 
     return dataset.map(
       lambda x, y: (

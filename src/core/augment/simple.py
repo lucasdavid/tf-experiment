@@ -17,7 +17,7 @@ class Simple(Default):
 
     self.random_generator = random_generator
     self.constraints = constraints
-  
+
   def augment(self, image):
     seeds = self.random_generator.make_seeds(7)
 
