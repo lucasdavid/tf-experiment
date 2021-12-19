@@ -66,6 +66,7 @@ def classification_multilabel_from_segmentation_cityscapes(entry, classes, sizes
 
   return image, label
 
+
 def adjust_resolution(image, sizes):
   es = tf.constant(sizes, tf.float32)
   xs = tf.cast(tf.shape(image)[:2], tf.float32)

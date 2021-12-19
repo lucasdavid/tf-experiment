@@ -21,7 +21,7 @@ dataset:
   prepare:
     batch_size: 128
     sizes: [512, 1024, 3]
-    buffer_size: auto
+    prefetch_buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
     task: classification_multilabel_from_segmentation_cityscapes

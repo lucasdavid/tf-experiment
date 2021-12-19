@@ -21,4 +21,8 @@ LOGS_DIR=$SCRATCH/logs/cifar10/baseline/
 
 cd $CODE_DIR
 
-python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py with $CONFIG_DIR -F $LOGS_DIR
+python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py with $CONFIG_DIR \
+  model.head.kernel_initializer=orthogonal \
+  model.head.kernel_regularizer=orthogonal \
+  model.head.dropout_rate=0 \
+  -F $LOGS_DIR

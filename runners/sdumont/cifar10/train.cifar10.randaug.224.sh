@@ -21,4 +21,4 @@ LOGS_DIR=$SCRATCH/logs/cifar10/baseline/
 
 cd $CODE_DIR
 
-python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py with $CONFIG_DIR -F $LOGS_DIR
+python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py with $CONFIG_DIR sizes="[224,224,3]" -F $LOGS_DIR

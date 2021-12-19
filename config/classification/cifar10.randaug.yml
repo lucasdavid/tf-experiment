@@ -21,7 +21,7 @@ dataset:
   prepare:
     batch_size: 64
     sizes: [32, 32, 3]
-    buffer_size: auto
+    prefetch_buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
     task: classification
@@ -122,7 +122,7 @@ training:
       class_name: sgd
       config:
         <<: *momentum
-        learning_rate: 0.001
+        learning_rate: 0.01
     config:
       epochs: 100
       initial_epoch: *epochs
