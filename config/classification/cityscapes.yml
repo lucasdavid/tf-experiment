@@ -44,9 +44,9 @@ dataset:
       as_numpy: false
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
+  name: rn101_cityscapes_ml
   input_shape: [512, 1024, 3]
   head:
-    name: rn101_cityscapes_ml
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2

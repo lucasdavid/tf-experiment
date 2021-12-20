@@ -63,7 +63,6 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
     run_params[f'paths.{p}'] = v
   # endregion
 
-  # region Dataset
   train, valid, test, info = core.datasets.tfds.load_and_prepare(dataset)
 
   to_file = f'{run_params["report_dir"]}/images.jpg'
@@ -71,15 +70,11 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   core.utils.visualize((127.5*(x+1.)).astype('uint8'), rows=4, figsize=(20, 4), to_file=to_file)
 
   del x, y
-  # endregion
 
-  # region Model
   with strategy.scope():
     model, backbone = core.models.classification.build_model(**model)
     core.models.summary(model, _log.info)
-  # endregion
 
-  # region Training and Evaluation
   model, histories = core.training.train_or_restore(
     model,
     backbone,
@@ -99,7 +94,6 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   )
 
   evaluations.to_csv(evaluation['report_path'].format(**paths), index=False)
-  # endregion
 
 
 if __name__ == '__main__':

@@ -44,9 +44,9 @@ dataset:
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
+  name: mc_cifar10
   input_shape: [32, 32, 3]
   head:
-    name: mc_cifar10
     units: *classes
     activation: softmax
     dropout_rate: 0.2

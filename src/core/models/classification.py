@@ -65,6 +65,8 @@ def build_head(
   )(y)
   y = Activation(activation, dtype='float32', name='head/predictions')(y)
 
+  return y
+
 
 def build_model(
     input_shape: List[int],

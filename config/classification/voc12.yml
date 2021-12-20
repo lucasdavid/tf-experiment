@@ -49,6 +49,7 @@ dataset:
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
+  name: ml_voc12
   input_shape: [512, 512, 3]
   head:
     units: *classes

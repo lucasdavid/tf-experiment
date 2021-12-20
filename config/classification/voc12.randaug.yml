@@ -44,9 +44,9 @@ dataset:
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
+  name: voc12_ml
   input_shape: [512, 512, 3]
   head:
-    name: voc12_ml
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2

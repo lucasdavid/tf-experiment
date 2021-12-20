@@ -65,7 +65,7 @@ def prepare(
     num_parallel_calls=parallel_calls,
     as_numpy=augmentation.get('as_numpy'),
     over=over,
-    out_shelement_spec=ds.element_spec,
+    element_spec=ds.element_spec,
   )
 
   if over == 'samples':
