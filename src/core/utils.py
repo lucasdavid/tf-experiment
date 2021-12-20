@@ -148,8 +148,8 @@ def get_preprocess_fn(preprocess_fn):
     if mod:
       return getattr(sys.modules[mod], fn_name)
     return globals[fn_name]
-  else:
-    return preprocess_fn
+  
+  return preprocess_fn
 
 
 def get_run_params(_run):

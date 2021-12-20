@@ -69,13 +69,13 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   to_file = f'{run_params["report_dir"]}/images.jpg'
   (x, y), = train.take(1).as_numpy_iterator()
   core.utils.visualize((127.5*(x+1.)).astype('uint8'), rows=4, figsize=(20, 4), to_file=to_file)
+
+  del x, y
   # endregion
 
   # region Model
   with strategy.scope():
-    inputs = tf.keras.Input(model['input_shape'], name='images')
-    backbone = core.models.backbone.get(inputs, **model['backbone'])
-    model = core.models.classification.head(inputs, backbone, **model['head'])
+    model, backbone = core.models.classification.build_model(**model)
     core.models.summary(model, _log.info)
   # endregion
 

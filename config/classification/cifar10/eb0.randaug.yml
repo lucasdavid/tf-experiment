@@ -1,70 +1,67 @@
 setup:
-  tf_seed: 41820
+  tf_seed: 421
   precision_policy: mixed_float16
   gpus_with_memory_growth: true
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/voc12/baseline/backup/"
+    ckpt: "./logs/cifar10/baseline/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
-    name: "voc/2012"
+    name: cifar10
     data_dir: *paths_data
     splits:
-      - train
-      - validation
-      - validation
+      - train[:80%]
+      - train[80%:]
+      - test
   prepare:
     batch_size: 64
-    sizes: [512, 512, 3]
+    sizes: &input_sizes [224, 224, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
     drop_remainder: true
-    task: classification_multilabel_from_detection
-    classes: &classes 20
+    task: classification
+    classes: &classes 10
     keys:
       - image
       - label
     augmentation:
       policy:
-        class_name: Simple
+        class_name: RandAug
         config:
-          random_generator: 10391
-          constraints:
-            brightness_delta: 0.2
-            saturation_lower: 0.5
-            saturation_upper: 1.0
-            contrast_lower: 0.5
-            contrast_upper: 1.5
-            hue_delta: 0.0
-      over: samples
-      as_numpy: false
+          n: 3
+          m: 7
+          seed: 10344
+      over: batches
+      as_numpy: true
     shuffle:
       buffer_size: 1000
       seed: 4081
       reshuffle_each_iteration: true
-    preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+    preprocess_fn: null
 model:
-  input_shape: [512, 512, 3]
+  input_shape: *input_sizes
   head:
+    name: mc_cifar10
     units: *classes
-    activation: sigmoid
+    activation: softmax
     dropout_rate: 0.2
+    batch_norm: true
     kernel_regularizer: null
     kernel_initializer: null
     layer_class: dense
   backbone:
-    architecture: ResNet101V2
+    architecture: EfficientNetB0
     weights: imagenet
     pooling: avg
     trainable: false
 training:
   perform: true
-  loss: BinaryCrossentropy
+  loss: SparseCategoricalCrossentropy
   optimizer:
     class_name: sgd
     config: &momentum
@@ -72,11 +69,12 @@ training:
       momentum: 0.9
       nesterov: true
   metrics:
-    - BinaryAccuracy
-    - Precision
-    - Recall
+    - SparseCategoricalAccuracy
+    - SparseTopKCategoricalAccuracy
+    # - precision
+    # - recall
   config:
-    epochs: &epochs 50
+    epochs: &epochs 20
     verbose: 2
   callbacks: &callbacks
     - TerminateOnNaN
@@ -117,6 +115,7 @@ training:
       override:
         backup_dir: paths.ckpt
   finetune:
+    perform: true
     unfreeze:
       layers: 'conv5_block1_1_conv'
       freeze_bn: true
@@ -131,5 +130,5 @@ training:
       verbose: 2
     callbacks: *callbacks
 evaluation:
-  task: classification_multilabel
+  task: sparse_classification_multiclass
   report_path: "{valid_report}"

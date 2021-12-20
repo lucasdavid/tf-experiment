@@ -21,6 +21,9 @@ class Orthogonal(tf.keras.regularizers.Regularizer):
 
 
 def get(identifier):
+  if not identifier:
+    return identifier
+
   name = (str(identifier.get('class_name'))
           if isinstance(identifier, dict)
           else str(identifier))

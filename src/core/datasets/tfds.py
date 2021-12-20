@@ -59,22 +59,23 @@ def prepare(
                    num_parallel_calls=parallel_calls)
 
   shapes = tuple(s.shape for s in ds.element_spec)
-  aug_over = augmentation.get('over', 'samples')
+  over = augmentation.get('over', 'samples')
   aug_policy = augment.get(augmentation['policy'])
   aug_parameters = dict(
     num_parallel_calls=parallel_calls,
     as_numpy=augmentation.get('as_numpy'),
-    element_spec=ds.element_spec
+    over=over,
+    out_shelement_spec=ds.element_spec,
   )
 
-  if aug_over == 'samples':
+  if over == 'samples':
     ds = aug_policy.augment_dataset(ds, **aug_parameters)
     ds = ds.padded_batch(batch_size, padded_shapes=shapes, drop_remainder=drop_remainder)
-  elif aug_over == 'batches':
+  elif over == 'batches':
     ds = ds.padded_batch(batch_size, padded_shapes=shapes, drop_remainder=drop_remainder)
     ds = aug_policy.augment_dataset(ds, **aug_parameters)
   else:
-    raise ValueError(f'Illegal value "{aug_over}" for augmentation.over config.')
+    raise ValueError(f'Illegal value "{over}" for augmentation.over config.')
 
   if take: ds = ds.take(take)
   if preprocess_fn:

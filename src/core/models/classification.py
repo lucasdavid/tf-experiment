@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import tensorflow as tf
-from tensorflow.keras.layers import Activation, Dense, Dropout
+from tensorflow.keras.layers import Activation, BatchNormalization, Dense, Dropout
 
 from .. import regularizers
+from . import backbone as core_backbone
 
 
 class DenseKU(Dense):
@@ -40,18 +41,21 @@ class DenseKU(Dense):
     return outputs
 
 
-def head(
+def build_head(
     input_tensor: tf.Tensor,
-    backbone: tf.keras.Model,
     units: int,
     activation: Optional[str] = 'linear',
+    batch_norm: bool = False,
     dropout_rate: Optional[float] = None,
     layer_class: str = None,
     kernel_initializer: str = None,
     kernel_regularizer: str = None,
-    name: str = None,
 ):
-  y = backbone(input_tensor)
+  y = input_tensor
+  
+  if batch_norm:
+    y = BatchNormalization(name='head/bn')(y)
+  
   y = Dropout(rate=dropout_rate, name='head/drop')(y)
   y = get(layer_class)(
     units,
@@ -61,12 +65,19 @@ def head(
   )(y)
   y = Activation(activation, dtype='float32', name='head/predictions')(y)
 
-  return tf.keras.Model(
-    inputs=input_tensor,
-    outputs=y,
-    name=name
-  )
 
+def build_model(
+    input_shape: List[int],
+    backbone: Dict[str, Any],
+    head: Dict[str, Any],
+    name: str = None
+):
+  x = tf.keras.Input(input_shape, name='inputs')
+  bb = core_backbone.get(x, **backbone)
+  y = bb(x)
+  y = build_head(y, **head)
+  
+  return tf.keras.Model(x, y, name=name), bb
 
 def get(identifier):
   if not identifier:
