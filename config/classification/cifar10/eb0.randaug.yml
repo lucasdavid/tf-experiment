@@ -6,7 +6,7 @@ setup:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/cifar10/baseline/backup/"
+    ckpt: "./logs/cifar10/eb0-randaug/backup/"
     export: "{report_dir}/final"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"

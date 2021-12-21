@@ -5,7 +5,7 @@
 #SBATCH -p nvidia_long
 #SBATCH -J pbn_train_cifar10
 #SBATCH --exclusive
-#SBATCH -o /scratch/lerdl/lucas.david/logs/cifar10/eb0-randaug/%j.out
+#SBATCH -o /scratch/lerdl/lucas.david/logs/cifar10/eb0-baseline/%j.out
 #SBATCH --time=12:00:00
 
 
@@ -16,8 +16,8 @@ module load gcc/7.4 python/3.9.1 cudnn/8.2_cuda-11.1
 
 CODE_DIR=$SCRATCH/experiments
 BUILD_DIR=$SCRATCH/experiments/build
-CONFIG_DIR=$SCRATCH/experiments/config/classification/cifar10/eb0.randaug.yml
-LOGS_DIR=$SCRATCH/logs/cifar10/eb0-randaug/
+CONFIG_DIR=$SCRATCH/experiments/config/classification/cifar10/eb0.baseline.yml
+LOGS_DIR=$SCRATCH/logs/cifar10/eb0-baseline/
 
 cd $CODE_DIR
 
