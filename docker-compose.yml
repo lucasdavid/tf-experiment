@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  notebook:
+    image: ldavid/salient-segmentation
+    build:
+      dockerfile: ./config/docker/Dockerfile
+      context: .
+    # command: python
+    ports:
+      - "8888:8888"
+      - "6006:6006"
+    env_file:
+      - ./config/docker/.env
+    volumes:
+      - ./notebooks:/tf/notebooks
+      - ./config:/tf/config
+      - ./logs:/tf/logs
+      - ./src:/tf/code
+      - ./data:/data
+      - ./data/cached/.cache:/root/.cache
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
