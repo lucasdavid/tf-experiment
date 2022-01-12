@@ -11,6 +11,8 @@ tensorflow
 tensorflow-datasets
 tensorflow-addons
 h5py
+
+opencv-python
 imgaug
 
 scikit-learn

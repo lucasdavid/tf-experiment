@@ -44,8 +44,8 @@ def classification_multiclass(
   predictions = tf.argmax(probabilities, axis=1)
   
   return {
-    **metrics.binary(labels, tf.one_hot(predictions, depth=len(classes)).numpy()),
-    **metrics.classification(labels.argmax(axis=1), probabilities.numpy(), predictions.numpy())
+    **metrics.classification_binary(labels, tf.one_hot(predictions, depth=len(classes)).numpy()),
+    **metrics.classification_multiclass(labels.argmax(axis=1), probabilities.numpy(), predictions.numpy())
   }
 
 
@@ -59,9 +59,21 @@ def classification_multilabel(
   labels = labels.numpy()
 
   return {
-    **metrics.binary(labels, predictions),
-    **metrics.ml_classification(labels, probabilities, predictions)
+    **metrics.classification_binary(labels, predictions),
+    **metrics.classification_multilabel(labels, probabilities, predictions)
   }
+
+
+def segmentation(
+    target_and_output: Tuple[tf.Tensor, tf.Tensor],
+    threshold: float = 0.5,
+    classes: List[str] = None,
+):
+  maps, probabilities = target_and_output
+  predictions = tf.cast(probabilities > threshold, probabilities.dtype).numpy()
+  maps = maps.numpy()
+
+  return metrics.segmentation_multiclass(maps, predictions, probabilities)
 
 
 def serialize(metric):
