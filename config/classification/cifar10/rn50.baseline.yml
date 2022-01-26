@@ -136,3 +136,7 @@ training:
 evaluation:
   task: sparse_classification_multiclass
   report_path: "{valid_report}"
+  splits:
+    train: true
+    validation: true
+    test: true
