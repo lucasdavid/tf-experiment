@@ -131,3 +131,7 @@ training:
 evaluation:
   task: classification_multilabel
   report_path: "{valid_report}"
+  splits:
+    train: true
+    validation: true
+    test: true
