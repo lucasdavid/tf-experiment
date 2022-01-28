@@ -1,9 +1,10 @@
-from typing import Dict, Union
-from .default import Default
+from typing import Dict, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
+
+from .default import Default
 
 
 class Simple(Default):
@@ -32,3 +33,14 @@ class Simple(Default):
     image = tfa.image.rotate(image, angles=angle, fill_mode='reflect')
     
     return image
+
+  def augment_dataset(
+      self,
+      dataset: tf.data.Dataset,
+      num_parallel_calls: int = None,
+      over: str = 'samples',
+      element_spec: Tuple[tf.TensorSpec] = None,
+  ) -> tf.data.Dataset:
+    return dataset.map(
+      lambda x, *y: (self.augment(x), *y),
+      num_parallel_calls=num_parallel_calls)

@@ -13,18 +13,25 @@
 # limitations under the License.
 
 import tensorflow as tf
+from .utils import to_list, unpack
 
-def target_and_output(model, dataset):
-  y_ = []
-  o_ = []
 
-  for batch, (x, t) in enumerate(dataset):
+def target_and_output(
+    model: tf.keras.Model,
+    dataset: tf.data.Dataset,
+    verbose: int = 1,
+):
+  targets = []
+  outputs = []
+
+  for step, (x, *t) in enumerate(dataset):
     o = model(x, training=False)
 
-    y_.append(t)
-    o_.append(o)
+    targets.append(t)
+    outputs.append(to_list(o))
 
-    print('.', end='' if (batch+1) % 120 else '\n')
-  
-  return (tf.concat(y_, axis=0),
-          tf.concat(o_, axis=0))
+    if verbose > 0:
+      print('.', end='' if (step+1) % 120 else '\n')
+
+  return (unpack([tf.concat(t, axis=0) for t in zip(*targets)]),
+          unpack([tf.concat(o, axis=0) for o in zip(*outputs)]))

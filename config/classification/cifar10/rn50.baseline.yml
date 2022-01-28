@@ -23,7 +23,7 @@ dataset:
     sizes: [32, 32, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
-    drop_remainder: true
+    pad_drop_remainder: true
     task: classification
     classes: &classes 10
     keys:
@@ -42,7 +42,6 @@ dataset:
             contrast_upper: 1.5
             hue_delta: 0.0
       over: samples
-      as_numpy: false
     shuffle:
       buffer_size: 1000
       seed: 4081

@@ -1,7 +1,7 @@
 setup:
   tf_seed: 41820
-  precision_policy: mixed_float16
-  gpus_with_memory_growth: true
+  # precision_policy: mixed_float16
+  # gpus_with_memory_growth: true
   paths:
     data: &paths_data "/data"
     export: "/tf/logs/models/pascal-2012/rn101/exported"
@@ -19,6 +19,7 @@ dataset:
     sizes: [512, 512, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
+    pad_values: -1.0
     pad_drop_remainder: true
     task: classification_multilabel_from_detection
     classes: &classes 20
@@ -44,8 +45,16 @@ dataset:
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 evaluation:
-  task: classification_multilabel
   report_path: "{report}"
+  explanations:
+    inference:
+      batch_size: 64
+      threshold: 0.5
+    methods:
+      - cam
+      - minmax_cam
+      - d_minmax_cam
+    ckpt_dir: '/data/cached/explaining'
   splits:
     train: true
     validation: true

@@ -20,6 +20,8 @@ from typing import Union
 import tensorflow as tf
 
 
+# region Data
+
 def normalize(x, reduce_min=True, reduce_max=True):
   if reduce_min:
     x -= tf.reduce_min(x, axis=(-3, -2), keepdims=True)
@@ -28,6 +30,136 @@ def normalize(x, reduce_min=True, reduce_max=True):
 
   return x
 
+def masked(x, maps):
+  return x * tf.image.resize(maps, x.shape[1:3])
+
+# endregion
+
+# region Model and Weights
+
+def unfreeze_top_layers(
+    model: tf.keras.Model,
+    layers: Union[str, int, float],
+    freeze_bn: bool,
+):
+  if not layers:
+    model.trainable = False
+    return
+
+  model.trainable = True
+
+  if isinstance(layers, str):
+    idx = model.layers.index(model.get_layer(layers))
+  elif isinstance(layers, float):
+    idx = int((1 - layers) * len(model.layers))
+  else:
+    idx = layers
+
+  for ix, l in enumerate(model.layers):
+    l.trainable = (ix > idx
+                   and (not isinstance(l, tf.keras.layers.BatchNormalization)
+                        or not freeze_bn))
+
+  print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers. '
+        f'Bottom-most is the {idx}-nth layer ({model.layers[idx].name}).')
+
+
+def try_to_load_weights(model, weights):
+  try:
+    model.load_weights(weights)
+  except FileNotFoundError:
+    print(f'Cannot restore weights from "{weights}".')
+
+# endregion
+
+# region Logging
+
+def log_begin(fun_name, *args, **kwargs):
+  now = datetime.now()
+
+  print(f'[{fun_name} started at {now}]')
+
+  max_param_size = max(list(map(len, kwargs.keys())) or [0])
+
+  print('  args:')
+  print('    ' + '\n    '.join(map(str, args)))
+
+  for k, v in kwargs.items():
+    print(f'  {k:<{max_param_size}} = {v}')
+  print()
+
+  return now
+
+
+def log_end(fun_name: str, started: datetime = None):
+  now = datetime.now()
+  elapsed = now - started if started else 'unknown'
+  print(f'[{fun_name} ended at {now} ({elapsed} elapsed)]')
+
+
+def logged(fn):
+  def _log_wrapper(*args, **kwargs):
+    started = log_begin(fn.__name__, *args, **kwargs)
+    r = fn(*args, **kwargs)
+    log_end(fn.__name__, started)
+
+    return r
+
+  return _log_wrapper
+
+
+def get_preprocess_fn(preprocess_fn):
+  if isinstance(preprocess_fn, str):
+    *mod, fn_name = preprocess_fn.split('.')
+    mod = '.'.join(mod)
+    if mod:
+      return getattr(sys.modules[mod], fn_name)
+    return globals[fn_name]
+  
+  return preprocess_fn
+
+# endregion
+
+# region Generics
+
+def dig(o, prop):
+  if isinstance(prop, str):
+    prop = prop.split('.')
+  
+  for p in prop:
+    if p in o:
+      o = o[p]
+    else:
+      return None
+  
+  return o
+
+
+def to_list(x):
+  return x if isinstance(x, list) else [x]
+
+
+def unpack(x):
+  return x[0] if isinstance(x, (list, tuple)) and len(x) == 1 else x
+
+# endregion
+
+# region Sacred
+
+def get_run_params(_run):
+  report_dir = None
+
+  if _run.observers:
+    for o in _run.observers:
+      if hasattr(o, 'dir'):
+        report_dir = o.dir
+        break
+
+  return {'report_dir': report_dir}
+
+# endregion
+
+# region Visualizations
 
 def visualize(image,
               title=None,
@@ -71,94 +203,4 @@ def visualize(image,
     plt.title(title)
   plt.axis('off')
 
-
-def unfreeze_top_layers(
-    model: tf.keras.Model,
-    layers: Union[str, int, float],
-    freeze_bn: bool,
-):
-  if not layers:
-    model.trainable = False
-    return
-
-  model.trainable = True
-
-  if isinstance(layers, str):
-    idx = model.layers.index(model.get_layer(layers))
-  elif isinstance(layers, float):
-    idx = int((1 - layers) * len(model.layers))
-  else:
-    idx = layers
-
-  for ix, l in enumerate(model.layers):
-    l.trainable = (ix > idx
-                   and (not isinstance(l, tf.keras.layers.BatchNormalization)
-                        or not freeze_bn))
-
-  print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers. '
-        f'Bottom-most is the {idx}-nth layer ({model.layers[idx].name}).')
-
-
-def try_to_load_weights(model, weights):
-  try:
-    model.load_weights(weights)
-  except FileNotFoundError:
-    print(f'Cannot restore weights from "{weights}".')
-
-
-def log_begin(fun_name, *args, **kwargs):
-  now = datetime.now()
-
-  print(f'[{fun_name} started at {now}]')
-
-  max_param_size = max(list(map(len, kwargs.keys())) or [0])
-
-  print('  args:')
-  print('    ' + ', '.join(map(str, args)))
-
-  for k, v in kwargs.items():
-    print(f'  {k:<{max_param_size}} = {v}')
-  print()
-
-  return now
-
-
-def log_end(fun_name: str, started: datetime = None):
-  now = datetime.now()
-  elapsed = now - started if started else 'unknown'
-  print(f'[{fun_name} ended at {now} ({elapsed} elapsed)]')
-
-
-def logged(fn):
-
-  def _log_wrapper(*args, **kwargs):
-    started = log_begin(fn.__name__, *args, **kwargs)
-    r = fn(*args, **kwargs)
-    log_end(fn.__name__, started)
-
-    return r
-
-  return _log_wrapper
-
-
-def get_preprocess_fn(preprocess_fn):
-  if isinstance(preprocess_fn, str):
-    *mod, fn_name = preprocess_fn.split('.')
-    mod = '.'.join(mod)
-    if mod:
-      return getattr(sys.modules[mod], fn_name)
-    return globals[fn_name]
-  
-  return preprocess_fn
-
-
-def get_run_params(_run):
-  report_dir = None
-
-  if _run.observers:
-    for o in _run.observers:
-      if hasattr(o, 'dir'):
-        report_dir = o.dir
-        break
-
-  return {'report_dir': report_dir}
+# endregion
