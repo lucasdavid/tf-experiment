@@ -29,7 +29,7 @@ ex.captured_out_filter = apply_backspaces_and_linefeeds
 
 
 @ex.main
-def run(setup, dataset, evaluation, _log, _run):
+def run(setup, dataset, model, evaluation, _log, _run):
   _log.info(__doc__)
 
   # region Setup
@@ -65,6 +65,12 @@ def run(setup, dataset, evaluation, _log, _run):
   with strategy.scope():
     nn = tf.keras.models.load_model(paths['export'])
     core.models.summary(nn, _log.info)
+
+    w = nn.layers[-1].weights[0]
+
+    if dig(model, 'head.layer_class') == 'kernel_usage':
+      w = w * tf.softmax(w - tf.reduce_max(w, axis=1, keepdims=True))
+    
   # endregion
 
   # region Evaluation
@@ -74,6 +80,7 @@ def run(setup, dataset, evaluation, _log, _run):
   pd.concat([
     core.testing.explanations.evaluate(
           nn,
+          w,
           split,
           name,
           classes=core.datasets.tfds.classes(info),
