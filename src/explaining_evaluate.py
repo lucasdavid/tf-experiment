@@ -22,6 +22,7 @@ from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
 
 import core
+from core.utils import dig
 
 ex = Experiment(save_git_info=False)
 ex.captured_out_filter = apply_backspaces_and_linefeeds
@@ -35,11 +36,11 @@ def run(setup, dataset, evaluation, _log, _run):
   if not len(evaluation['splits']):
     raise ValueError('Set at least one split to be evaluated.')
 
-  if 'precision_policy' in setup and setup['precision_policy']:
+  if dig(setup, 'precision_policy'):
     precision_policy = tf.keras.mixed_precision.Policy(setup['precision_policy'])
     tf.keras.mixed_precision.set_global_policy(precision_policy)
 
-  if setup['gpus_with_memory_growth']:
+  if dig(setup, 'gpus_with_memory_growth'):
     core.boot.gpus_with_memory_growth()
 
   strategy = core.boot.appropriate_distributed_strategy()
@@ -53,36 +54,34 @@ def run(setup, dataset, evaluation, _log, _run):
   # region Dataset
   train, valid, test, info = core.datasets.tfds.load_and_prepare(dataset)
 
-  to_file = f'{run_params["report_dir"]}/images.jpg'
-  (x, *_), = train.take(1).as_numpy_iterator()
-  core.utils.visualize((127.5*(x+1.)).astype('uint8'), rows=4, figsize=(20, 4), to_file=to_file)
+  # to_file = f'{run_params["report_dir"]}/images.jpg'
+  # (x, *_), = train.take(1).as_numpy_iterator()
+  # core.utils.visualize((127.5*(x+1.)).astype('uint8'), rows=4, figsize=(18, 4), to_file=to_file)
+  # del x
 
-  del x
   # endregion
 
   # region Model Restoration
   with strategy.scope():
-    model = tf.keras.models.load_model(paths['export'])
-    core.models.summary(model, _log.info)
+    nn = tf.keras.models.load_model(paths['export'])
+    core.models.summary(nn, _log.info)
   # endregion
 
   # region Evaluation
   names = ('train', 'validation', 'test')
   splits = (train.take(1), valid.take(1), test.take(1))
-  evaluations = []
-
-  for name, split in zip(names, splits):
-    if name in evaluation['splits'] and evaluation['splits'][name]:
-      evaluations.append(
-        core.testing.evaluate(
-          model,
+  
+  pd.concat([
+    core.testing.explanations.evaluate(
+          nn,
           split,
-          task=evaluation['task'],
+          name,
           classes=core.datasets.tfds.classes(info),
+          **evaluation['explanations']
         ).assign(split=name)
-      )
-
-  pd.concat(evaluations).to_csv(evaluation['report_path'].format(**paths), index=False)
+    for name, split in zip(names, splits)
+    if name in evaluation['splits'] and evaluation['splits'][name]
+  ]).to_csv(evaluation['report_path'].format(**paths), index=False)
   # endregion
 
 

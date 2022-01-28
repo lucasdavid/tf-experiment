@@ -23,7 +23,7 @@ dataset:
     sizes: [512, 1024, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
-    drop_remainder: true
+    pad_drop_remainder: true
     task: classification_multilabel_from_segmentation_cityscapes
     classes: &classes 27
     keys:
@@ -41,7 +41,6 @@ dataset:
             contrast_upper: 1.5
             hue_delta: 0.0
       over: samples
-      as_numpy: false
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   name: rn101_cityscapes_ml

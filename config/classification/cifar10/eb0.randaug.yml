@@ -23,7 +23,7 @@ dataset:
     sizes: &input_sizes [224, 224, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
-    drop_remainder: true
+    pad_drop_remainder: true
     task: classification
     classes: &classes 10
     keys:
@@ -37,7 +37,6 @@ dataset:
           m: 7
           seed: 10344
       over: batches
-      as_numpy: true
     shuffle:
       buffer_size: 1000
       seed: 4081

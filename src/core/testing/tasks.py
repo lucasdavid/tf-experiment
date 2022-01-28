@@ -15,9 +15,8 @@
 from typing import List, Tuple
 
 import tensorflow as tf
-from keras.utils.generic_utils import (
-    deserialize_keras_object, serialize_keras_object
-)
+from keras.utils.generic_utils import (deserialize_keras_object,
+                                       serialize_keras_object)
 
 from . import metrics
 
@@ -39,13 +38,18 @@ def classification_multiclass(
     classes: List[str] = None,
 ):
   labels, probabilities = target_and_output
-  
+
   labels = labels.numpy()
   predictions = tf.argmax(probabilities, axis=1)
-  
+
   return {
-    **metrics.classification_binary(labels, tf.one_hot(predictions, depth=len(classes)).numpy()),
-    **metrics.classification_multiclass(labels.argmax(axis=1), probabilities.numpy(), predictions.numpy())
+    **metrics.classification_binary(
+      labels,
+      tf.one_hot(predictions, depth=len(classes)).numpy()
+    ),
+    **metrics.classification_multiclass(
+      labels.argmax(axis=1), probabilities.numpy(), predictions.numpy()
+    )
   }
 
 
@@ -76,16 +80,36 @@ def segmentation(
   return metrics.segmentation_multiclass(maps, predictions, probabilities)
 
 
+def explaining(
+    target_and_output: Tuple[tf.Tensor, tf.Tensor],
+    threshold: float = 0.5,
+    classes: List[str] = None,
+):
+  (b, y), (p, c) = target_and_output
+  pr = tf.cast(p > threshold, p.dtype).numpy()
+
+  _loc_iou = metrics.iou_localization_detection(
+    b.numpy(),
+    y.numpy(),
+    c.numpy(),
+    p.numpy(),
+    pr.numpy())
+
+  return {
+    'localization_iou': _loc_iou
+  }
+
+
 def serialize(metric):
   return serialize_keras_object(metric)
 
 
 def deserialize(config, custom_objects=None):
   return deserialize_keras_object(
-    config,
-    module_objects=globals(),
-    custom_objects=custom_objects,
-    printable_module_name='task evaluator function'
+      config,
+      module_objects=globals(),
+      custom_objects=custom_objects,
+      printable_module_name='task evaluator function'
   )
 
 

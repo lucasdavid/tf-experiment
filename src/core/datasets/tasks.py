@@ -12,46 +12,43 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from logging import warning
+
 import tensorflow as tf
+from keras.utils.generic_utils import (deserialize_keras_object,
+                                       serialize_keras_object)
+
+from ..utils import dig
+
 
 def classification(entry, classes, sizes, keys):
-  data_key, target_key = keys
-  image, label = entry[data_key], entry[target_key]
+  image, label = (dig(entry, k) for k in keys)
 
   if sizes is not None:
     image, _ = adjust_resolution(image, sizes)
 
-  return image, label
+  return tf.cast(image, tf.float32), label
+
 
 def classification_multilabel_from_detection(entry, classes, sizes, keys):
-  data_key, target_key = keys
-  image, label = entry[data_key], entry['objects'][target_key]
-
+  image, label = classification(entry, classes, sizes, keys)
   label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
-
-  if sizes is not None:
-    image, _ = adjust_resolution(image, sizes)
 
   return image, label
 
 
 def classification_multilabel_from_segmentation(entry, classes, sizes, keys):
-  data_key, target_key = keys
-  image, label = entry[data_key], entry[target_key]
+  image, label = classification(entry, classes, sizes, keys)
 
   label = tf.reshape(label, [-1])
   label = tf.unique(label)[0]
   label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
 
-  if sizes is not None:
-    image, _ = adjust_resolution(image, sizes)
-
   return image, label
 
 
 def classification_multilabel_from_segmentation_cityscapes(entry, classes, sizes, keys):
-  data_key, target_key = keys
-  image, label = entry[data_key], entry[target_key]
+  image, label = (dig(entry, k) for k in keys)
 
   label = tf.reshape(label, [-1])
   label = tf.unique(label)[0] - 7
@@ -67,6 +64,19 @@ def classification_multilabel_from_segmentation_cityscapes(entry, classes, sizes
   return image, label
 
 
+def object_detection(entry, classes, sizes, keys):
+  if not any('objects' in k for k in keys):
+    warning(f'An object detection task is running, but "objects" is not in '
+            f'keys={keys}. Make sure you are selecting the correct labels.')
+  
+  image, bboxes, label = (tf.cast(dig(entry, k), tf.float32) for k in keys)
+
+  if sizes is not None:
+    image, _ = adjust_resolution(image, sizes)
+
+  return image, bboxes, label
+
+
 def adjust_resolution(image, sizes):
   es = tf.constant(sizes, tf.float32)
   xs = tf.cast(tf.shape(image)[:2], tf.float32)
@@ -80,11 +90,35 @@ def adjust_resolution(image, sizes):
   return image, ratio
 
 
-def get(identity):
-  return globals()[identity]
+def serialize(task):
+  return serialize_keras_object(task)
+
+
+def deserialize(config, custom_objects=None):
+  return deserialize_keras_object(
+      config,
+      module_objects=globals(),
+      custom_objects=custom_objects,
+      printable_module_name='dataset task function'
+  )
+
+
+def get(identifier):
+  if isinstance(identifier, dict):
+    return deserialize(identifier)
+  elif isinstance(identifier, str):
+    return deserialize(str(identifier))
+  elif callable(identifier):
+    return identifier
+  else:
+    raise ValueError(f'Could not interpret dataset task identifier: {identifier}')
+
 
 __all__ = [
   'classification',
   'classification_multilabel_from_detection',
+  'classification_multilabel_from_segmentation',
+  'classification_multilabel_from_segmentation_cityscapes',
+  'object_detection',
   'get',
 ]

@@ -23,12 +23,12 @@ dataset:
     sizes: &input_sizes [512, 512, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
-    drop_remainder: true
+    pad_drop_remainder: true
     task: classification_multilabel_from_detection
     classes: &classes 10
     keys:
       - image
-      - label
+      - objects.label
     augmentation:
       policy:
         class_name: RandAug
@@ -37,7 +37,6 @@ dataset:
           m: 7
           seed: 15110
       over: batches
-      as_numpy: true
     shuffle:
       buffer_size: 1000
       seed: 2244
