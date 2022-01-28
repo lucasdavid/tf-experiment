@@ -35,6 +35,21 @@ dataset:
       seed: 4081
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+model:
+  name: ml_voc07
+  input_shape: [512, 512, 3]
+  head:
+    units: *classes
+    activation: sigmoid
+    dropout_rate: 0.2
+    kernel_regularizer: null
+    kernel_initializer: null
+    layer_class: dense
+  backbone:
+    architecture: ResNet101V2
+    weights: imagenet
+    pooling: avg
+    trainable: false
 evaluation:
   report_path: "{report}"
   explanations:

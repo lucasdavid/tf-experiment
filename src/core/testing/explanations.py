@@ -1,5 +1,3 @@
-#@title Testing Loop
-
 import os
 import pickle
 from typing import Dict, List, Union
@@ -17,6 +15,7 @@ from .metrics import (average_drop, average_drop_of_others,
 @logged
 def evaluate(
     nn: tf.keras.Model,
+    w: tf.Tensor,
     dataset: tf.data.Dataset,
     dataset_id: str,
     classes: List[str],
@@ -35,6 +34,7 @@ def evaluate(
     evaluate_one(
       nn,
       nns,
+      w,
       dataset,
       vis_method,
       classes,
@@ -46,9 +46,9 @@ def evaluate(
 
 
 @logged
-def evaluate_one(nn, nns, dataset, vis_method, classes, inference, ckpt_file):
+def evaluate_one(nn, nns, w, dataset, vis_method, classes, inference, ckpt_file):
   vis_method = explain.get(vis_method)
-  print(f'Testing {vis_method.__name__}')
+  print(f'→  evaluating {vis_method.__name__}')
 
   cam_modifier = lambda c: normalize(tf.nn.relu(c))
 
@@ -70,13 +70,14 @@ def evaluate_one(nn, nns, dataset, vis_method, classes, inference, ckpt_file):
                np.zeros(len(classes)),
                np.zeros(len(classes), np.uint16))
 
-  return _evaluate_run(nn, nns, dataset, vis_method, cam_modifier, ckpt_file,
-                       metrics, classes, inference, steps)
+  return _evaluate_run(nn, nns, w, dataset, vis_method, cam_modifier,
+                       ckpt_file, metrics, classes, inference, steps)
 
 
 def _evaluate_run(
     nn,
     nns,
+    w,
     dataset,
     cam_method,
     cam_modifier,
@@ -86,20 +87,18 @@ def _evaluate_run(
     inference,
     step=0,
 ):
-  w = nn.layers[-1].weights[0]
-
   metric_names = ('increase %', 'avg drop %', 'avg retention %',
                   'avg drop of others %', 'avg retention of others %',
                   'detections')
 
   for x, bbox, label in dataset:
-    label = tf.reduce_max(tf.one_hot(label, depth=len(classes)), axis=0)
+    label = tf.reduce_max(tf.one_hot(tf.cast(label, tf.uint8), depth=len(classes)), axis=0)
 
     p, m = cam_method(nns, x, label, w)
     p = tf.nn.sigmoid(p)
     m = cam_modifier(m[..., tf.newaxis])
     
-    results = cam_evaluation_step(nn, x, p, m, **inference)
+    results = cam_evaluation_step(nn, x, label, bbox, p, m, **inference)
 
     for e, f in zip(metrics, results):
       e += f
@@ -129,10 +128,12 @@ def _evaluate_run(
 def cam_evaluation_step(
     nn,
     x,
+    label,
+    b,
     p,
     m,
     batch_size: int = 32,
-    threshold: float = explain.DEFAULT_THRESHOLD
+    threshold: float = explain.CLF_T
 ):
   s = p > threshold
   w = tf.where(s)
@@ -142,8 +143,8 @@ def cam_evaluation_step(
 
   detections = tf.reduce_sum(tf.cast(s, tf.uint32), axis=0)
 
-  y = p[s]                       # (batch, c)           --> (detections)
-  xs = tf.gather(x, samples_ix)  # (batch, 300, 300, 3) --> (detections, 300, 300, 3)
+  y = p[s]                       # (b, c)           --> (o)
+  xs = tf.gather(x, samples_ix)  # (b, 300, 300, 3) --> (o, 300, 300, 3)
 
   o = nn.predict(masked(xs, md), batch_size=batch_size)
   o = tf.nn.sigmoid(o)
