@@ -1,6 +1,8 @@
 {
   "files.watcherExclude": {
+    "data**": true,
     "data/**": true,
+    "logs**": true,
     "logs/**": true
   }
 }
