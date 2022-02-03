@@ -31,7 +31,7 @@ class Simple(Default):
 
     angle = tf.random.stateless_uniform((), maxval=2*np.pi, seed=seeds[:, 6])
     image = tfa.image.rotate(image, angles=angle, fill_mode='reflect')
-    
+
     return image
 
   def augment_dataset(

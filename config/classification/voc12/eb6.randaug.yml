@@ -9,7 +9,7 @@ setup:
     ckpt: "./logs/voc12/eb0-randaug/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
-    valid_report: "{report_dir}/valid-report.csv"
+    valid_report: "{report_dir}/evaluation.csv"
 dataset:
   load:
     name: 'voc/2012'

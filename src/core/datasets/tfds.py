@@ -47,7 +47,7 @@ def prepare(
     shuffle: Optional[Dict[str, Any]] = None,
     preprocess_fn: Callable = None,
     pad_drop_remainder: bool = True,
-    pad_values: float = -1.0,
+    pad_values: float = -1,
 ):
   if prefetch_buffer_size == 'auto':
     prefetch_buffer_size = tf.data.AUTOTUNE
@@ -59,19 +59,25 @@ def prepare(
 
   ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes[:2], keys=keys))
 
-  shapes = tuple(s.shape for s in ds.element_spec)
+  specs = ds.element_spec
+  shapes = tuple(s.shape for s in specs)
   over = augmentation.get('over', 'samples')
   aug_policy = augment.get(augmentation['policy'])
 
+  pad_values = to_list(pad_values)
+  if len(shapes) != 1 == len(pad_values):
+    pad_values *= len(shapes)
+  pad_values = [tf.convert_to_tensor(v, dtype=s.dtype) for v, s in zip(pad_values, specs)]
+
   aug_params = dict(
     over=over,
-    element_spec=ds.element_spec,
+    element_spec=specs,
     num_parallel_calls=parallel_calls,
   )
   pad_params = dict(
     padded_shapes=shapes,
     drop_remainder=pad_drop_remainder,
-    padding_values=unpack(tuple(to_list(pad_values)))
+    padding_values=unpack(tuple(pad_values))
   )
 
   if over == 'samples':
@@ -86,7 +92,9 @@ def prepare(
   if take: ds = ds.take(take)
   if preprocess_fn:
     preprocess_fn = utils.get_preprocess_fn(preprocess_fn)
-    ds = ds.map(lambda x, *y: (preprocess_fn(x), *y), num_parallel_calls=parallel_calls)
+    ds = ds.map(lambda x, *y: (preprocess_fn(tf.cast(x, tf.float32)), *y), num_parallel_calls=parallel_calls)
+  else:
+    ds = ds.map(lambda x, *y: (tf.cast(x, tf.float32), *y), num_parallel_calls=parallel_calls)
 
   return ds.prefetch(prefetch_buffer_size)
 

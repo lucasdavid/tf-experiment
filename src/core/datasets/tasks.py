@@ -27,7 +27,7 @@ def classification(entry, classes, sizes, keys):
   if sizes is not None:
     image, _ = adjust_resolution(image, sizes)
 
-  return tf.cast(image, tf.float32), label
+  return image, label
 
 
 def classification_multilabel_from_detection(entry, classes, sizes, keys):
@@ -69,15 +69,26 @@ def object_detection(entry, classes, sizes, keys):
     warning(f'An object detection task is running, but "objects" is not in '
             f'keys={keys}. Make sure you are selecting the correct labels.')
   
-  image, bboxes, label = (tf.cast(dig(entry, k), tf.float32) for k in keys)
+  image, bboxes, label = (dig(entry, k) for k in keys)
 
   if sizes is not None:
     image, _ = adjust_resolution(image, sizes)
+  
+  bboxes, label = (tf.cast(e, tf.float32) for e in (bboxes, label))
 
   return image, bboxes, label
 
 
 def adjust_resolution(image, sizes):
+  """Adjust input image sizes to be within the expected `sizes`.
+
+  Example:
+    shape = (512, 1024, 3)
+    sizes = (512, 512)
+    =>
+    out shape = (256, 512, 3)
+
+  """
   es = tf.constant(sizes, tf.float32)
   xs = tf.cast(tf.shape(image)[:2], tf.float32)
 
@@ -85,7 +96,6 @@ def adjust_resolution(image, sizes):
   xsn = tf.cast(tf.math.ceil(ratio * xs), tf.int32)
 
   image = tf.image.resize(image, xsn, preserve_aspect_ratio=True, method='nearest')
-  image = tf.image.resize_with_crop_or_pad(image, *sizes)
 
   return image, ratio
 

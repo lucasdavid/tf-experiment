@@ -9,7 +9,7 @@ setup:
     ckpt: "./logs/classification/coco17/rn50.baseline/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
-    valid_report: "{report_dir}/valid-report.csv"
+    valid_report: "{report_dir}/evaluation.csv"
 dataset:
   load:
     name: 'coco/2017_panoptic'
@@ -25,10 +25,10 @@ dataset:
     parallel_calls: auto
     pad_drop_remainder: true
     task: classification_multilabel_from_detection
-    classes: &classes 80
+    classes: &classes 133
     keys:
       - image
-      - objects.label
+      - panoptic_objects.label
     augmentation:
       policy:
         class_name: Simple

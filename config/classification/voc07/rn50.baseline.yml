@@ -64,7 +64,7 @@ model:
     pooling: avg
     trainable: false
 training:
-  perform: false
+  perform: true
   loss: BinaryCrossentropy
   optimizer:
     class_name: sgd

@@ -1,6 +1,6 @@
 setup:
   tf_seed: 41820
-  precision_policy: mixed_float16
+  # precision_policy: mixed_float16
   gpus_with_memory_growth: true
   paths:
     data: &paths_data "./data"
@@ -9,7 +9,7 @@ setup:
     ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
-    valid_report: "{report_dir}/valid-report.csv"
+    valid_report: "{report_dir}/evaluation.csv"
 dataset:
   load:
     name: 'voc/2007'
