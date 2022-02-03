@@ -32,12 +32,14 @@ Example outline:
 
   The model is evaluated.
 """
+import atexit
 
 import tensorflow as tf
 from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
 
 import core
+from core.utils import dig
 
 ex = Experiment(save_git_info=False)
 ex.captured_out_filter = apply_backspaces_and_linefeeds
@@ -48,15 +50,17 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   _log.info(__doc__)
 
   # region Setup
-  if 'precision_policy' in setup and setup['precision_policy']:
-    precision_policy = tf.keras.mixed_precision.Policy(setup['precision_policy'])
-    tf.keras.mixed_precision.set_global_policy(precision_policy)
+  precision_policy = dig(setup, 'precision_policy')
+  if precision_policy:
+    tf.keras.mixed_precision.set_global_policy(
+      tf.keras.mixed_precision.Policy(precision_policy))
 
-  if setup['gpus_with_memory_growth']:
+  if dig(setup, 'gpus_with_memory_growth'):
     core.boot.gpus_with_memory_growth()
-  
-  strategy = core.boot.appropriate_distributed_strategy()
 
+  strategy = core.boot.appropriate_distributed_strategy()
+  atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
+  
   run_params = core.utils.get_run_params(_run)
   paths = {k: v.format(**run_params) for k, v in setup['paths'].items()}
   for p, v in paths.items():
@@ -93,7 +97,9 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
     classes=core.datasets.tfds.classes(info),
   )
 
-  evaluations.to_csv(evaluation['report_path'].format(**paths), index=False)
+  report_path = evaluation['report_path'].format(**paths)
+  print(f'Saving evaluation report at {report_path}')
+  evaluations.to_csv(report_path, index=False)
 
 
 if __name__ == '__main__':

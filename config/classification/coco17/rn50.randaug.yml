@@ -1,23 +1,23 @@
 setup:
-  tf_seed: 41820
-  precision_policy: mixed_float16
+  tf_seed: 72142
+  # precision_policy: mixed_float16
   gpus_with_memory_growth: true
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/voc07/baseline/backup/"
-    export: "{report_dir}/final"
+    ckpt: "./logs/classification/coco17/rn50.baseline/backup/"
+    export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
-    name: "voc/2007"
+    name: 'coco/2017_panoptic'
     data_dir: *paths_data
     splits:
       - train
       - validation
-      - test
+      - validation
   prepare:
     batch_size: 64
     sizes: [512, 512, 3]
@@ -25,7 +25,7 @@ dataset:
     parallel_calls: auto
     pad_drop_remainder: true
     task: classification_multilabel_from_detection
-    classes: &classes 20
+    classes: &classes 80
     keys:
       - image
       - objects.label
@@ -43,12 +43,13 @@ dataset:
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  name: voc07_ml
+  name: ml_coco17
   input_shape: [512, 512, 3]
   head:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
+    batch_norm: false
     kernel_regularizer: null
     kernel_initializer: null
     layer_class: dense
@@ -71,8 +72,8 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 10
-    verbose: 1
+    epochs: &epochs 35
+    verbose: 2
   callbacks: &callbacks
     - TerminateOnNaN
     - class_name: EarlyStopping
@@ -112,7 +113,7 @@ training:
       override:
         backup_dir: paths.ckpt
   finetune:
-    perform: true
+    perform: true 
     unfreeze:
       layers: 'conv5_block1_1_conv'
       freeze_bn: true
@@ -122,9 +123,9 @@ training:
         <<: *momentum
         learning_rate: 0.001
     config:
-      epochs: 20
+      epochs: 100
       initial_epoch: *epochs
-      verbose: 1
+      verbose: 2
     callbacks: *callbacks
 evaluation:
   task: classification_multilabel

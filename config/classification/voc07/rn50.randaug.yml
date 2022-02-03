@@ -6,8 +6,8 @@ setup:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/voc07/baseline/backup/"
-    export: "{report_dir}/final"
+    ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
+    export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
@@ -112,6 +112,7 @@ training:
       override:
         backup_dir: paths.ckpt
   finetune:
+    perform: true
     unfreeze:
       layers: 'conv5_block1_1_conv'
       freeze_bn: true

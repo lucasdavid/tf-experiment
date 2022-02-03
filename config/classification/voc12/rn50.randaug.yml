@@ -7,7 +7,7 @@ setup:
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
     ckpt: "./logs/voc12/baseline/backup/"
-    export: "{report_dir}/final"
+    export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:

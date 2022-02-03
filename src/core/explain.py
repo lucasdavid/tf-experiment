@@ -2,13 +2,12 @@ import tensorflow as tf
 from keras.utils.generic_utils import (deserialize_keras_object,
                                        serialize_keras_object)
 
+from . import constants
 from .utils import normalize
-
-CLF_T = tf.constant(0.5, tf.float32)
 
 
 @tf.function
-def cam(model, x, y, w, threshold=CLF_T):
+def cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
   print(f'CAM tracing x:{x.shape} y:{y.shape}')
 
   l, a = model(x, training=False)
@@ -18,7 +17,7 @@ def cam(model, x, y, w, threshold=CLF_T):
 
 
 @tf.function
-def gradcampp(model, x, y, w, threshold=CLF_T):
+def gradcampp(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
   print(f'Grad-CAM++ tracing x:{x.shape} y:{y.shape}')
 
   with tf.GradientTape(watch_accessed_variables=False) as tape:
@@ -41,7 +40,7 @@ def gradcampp(model, x, y, w, threshold=CLF_T):
   return s, maps
 
 
-def scorecam(model, x, y, w, threshold=CLF_T, acts_used=None):
+def scorecam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD, acts_used=None):
   l, a = model(x, training=False)
 
   if acts_used == 'all' or acts_used is None:
@@ -75,7 +74,7 @@ def _scorecam_feed(model, x, ak, sizes):
 
 
 @tf.function
-def minmax_cam(model, x, y, w, threshold=CLF_T):
+def minmax_cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
   print(f'MinMax-CAM (tracing x:{x.shape} p:{y.shape})')
 
   l, a = model(x, training=False)
@@ -96,7 +95,7 @@ def minmax_cam(model, x, y, w, threshold=CLF_T):
 
 
 @tf.function
-def d_minmax_cam(model, x, y, w, threshold=CLF_T):
+def d_minmax_cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
   print(f'D-MinMax-CAM (tracing x:{x.shape} y={y.shape})')
 
   l, a = model(x, training=False)

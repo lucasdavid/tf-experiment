@@ -60,8 +60,9 @@ def unfreeze_top_layers(
                    and (not isinstance(l, tf.keras.layers.BatchNormalization)
                         or not freeze_bn))
 
-  print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers. '
-        f'Bottom-most is the {idx}-nth layer ({model.layers[idx].name}).')
+  print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers '
+        f'(layers={layers} freeze_bn={freeze_bn}). Bottom-most is the '
+        f'{idx}-nth layer ({model.layers[idx].name}).')
 
 
 def try_to_load_weights(model, weights):

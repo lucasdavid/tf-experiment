@@ -19,7 +19,7 @@ from typing import List
 import tensorflow as tf
 
 from .callbacks import get as cb_deserialize
-from .utils import unfreeze_top_layers, try_to_load_weights
+from .utils import unfreeze_top_layers, try_to_load_weights, dig
 
 
 def train_or_restore(
@@ -59,16 +59,16 @@ def train_or_restore(
           **config
       )
     except KeyboardInterrupt:
-      print('\n  interrupted')
+      print('\ninterrupted')
     else:
-      print('\n  done')
+      print('\ndone')
 
     histories += nn.history.history
   else:
     print('Training will be skipped (perform=false). Attempting to load '
           f'previously trained model from "{paths["best"]}"')
 
-  if finetune['perform']:
+  if dig(finetune, 'perform'):
     print('-' * 32)
     print('Fine-Tuning Entire Network')
 
@@ -89,9 +89,9 @@ def train_or_restore(
           **finetune['config']
       )
     except KeyboardInterrupt:
-      print('\n  interrupted')
+      print('\ninterrupted')
     else:
-      print('\n  done')
+      print('\ndone')
 
     histories += nn.history.history
   else:

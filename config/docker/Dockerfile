@@ -1,4 +1,5 @@
-FROM tensorflow/tensorflow:latest-jupyter
+ARG BASE_IMAGE
+FROM $BASE_IMAGE
 
 MAINTAINER Lucas David <lucasolivdavid@gmail.com>
 
@@ -10,5 +11,3 @@ RUN pip -qq install -r requirements.txt
 ADD notebooks/requirements.txt .
 RUN pip -qq install -r requirements.txt
 RUN jt -t grade3
-
-ENV JOBLIB_TEMP_FOLDER /data/joblib/
