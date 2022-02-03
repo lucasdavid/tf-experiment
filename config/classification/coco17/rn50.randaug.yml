@@ -1,54 +1,55 @@
 setup:
-  tf_seed: 41820
-  precision_policy: mixed_float16
+  tf_seed: 72142
+  # precision_policy: mixed_float16
   gpus_with_memory_growth: true
   paths:
-    data: &paths_data "/scratch/lerdl/lucas.david/datasets/"
+    data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "/scratch/lerdl/lucas.david/logs/cityscapes/baseline/backup/"
+    ckpt: "./logs/classification/coco17/rn50.baseline/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/valid-report.csv"
 dataset:
   load:
-    name: "cityscapes/semantic_segmentation_extra"
+    name: 'coco/2017_panoptic'
     data_dir: *paths_data
     splits:
       - train
       - validation
-      - train_extra
+      - validation
   prepare:
     batch_size: 64
-    sizes: [512, 1024, 3]
+    sizes: [512, 512, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
     pad_drop_remainder: true
-    task: classification_multilabel_from_segmentation_cityscapes
-    classes: &classes 27
+    task: classification_multilabel_from_detection
+    classes: &classes 80
     keys:
-      - image_left
-      - segmentation_label
+      - image
+      - objects.label
     augmentation:
-      class_name: Simple
+      policy:
+        class_name: RandAug
         config:
-          random_generator: 10391
-          constraints:
-            brightness_delta: 0.2
-            saturation_lower: 0.5
-            saturation_upper: 1.0
-            contrast_lower: 0.5
-            contrast_upper: 1.5
-            hue_delta: 0.0
-      over: samples
+          n: 3
+          m: 7
+          seed: 10344
+      over: batches
+    shuffle:
+      buffer_size: 1000
+      seed: 4081
+      reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  name: rn101_cityscapes_ml
-  input_shape: [512, 1024, 3]
+  name: ml_coco17
+  input_shape: [512, 512, 3]
   head:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
+    batch_norm: false
     kernel_regularizer: null
     kernel_initializer: null
     layer_class: dense
@@ -71,7 +72,7 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 50
+    epochs: &epochs 35
     verbose: 2
   callbacks: &callbacks
     - TerminateOnNaN
@@ -112,9 +113,9 @@ training:
       override:
         backup_dir: paths.ckpt
   finetune:
-    perform: true
+    perform: true 
     unfreeze:
-      layers: conv4_block10_out
+      layers: 'conv5_block1_1_conv'
       freeze_bn: true
     optimizer:
       class_name: sgd
@@ -122,7 +123,7 @@ training:
         <<: *momentum
         learning_rate: 0.001
     config:
-      epochs: 300
+      epochs: 100
       initial_epoch: *epochs
       verbose: 2
     callbacks: *callbacks

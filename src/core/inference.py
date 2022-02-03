@@ -32,6 +32,8 @@ def target_and_output(
 
     if verbose > 0:
       print('.', end='' if (step+1) % 120 else '\n')
+  
+  if verbose > 0: print()
 
   return (unpack([tf.concat(t, axis=0) for t in zip(*targets)]),
           unpack([tf.concat(o, axis=0) for o in zip(*outputs)]))

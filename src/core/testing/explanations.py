@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from .. import explain
+from .. import explain, constants
 from ..utils import logged, masked, normalize
 from .metrics import (average_drop, average_drop_of_others,
                       increase_in_confidence)
@@ -133,7 +133,7 @@ def cam_evaluation_step(
     p,
     m,
     batch_size: int = 32,
-    threshold: float = explain.CLF_T
+    threshold: float = constants.CLASSIFICATION_THRESHOLD
 ):
   s = p > threshold
   w = tf.where(s)

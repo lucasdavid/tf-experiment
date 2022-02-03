@@ -1,11 +1,14 @@
-version: "3.9"
+version: "2.3"
 services:
   notebook:
     image: ldavid/salient-segmentation
+    # user: "${UID}:${GID}"
+    runtime: nvidia
     build:
       dockerfile: ./config/docker/Dockerfile
       context: .
-    # command: python
+      args:
+        BASE_IMAGE: tensorflow/tensorflow:latest-gpu-jupyter
     ports:
       - "8888:8888"
       - "6006:6006"
@@ -16,10 +19,5 @@ services:
       - ./config:/tf/config
       - ./logs:/tf/logs
       - ./src:/tf/code
-      - ./data:/data
+      - ./data:/tf/data
       - ./data/cached/.cache:/root/.cache
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
