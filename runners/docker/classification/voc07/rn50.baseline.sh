@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SERVICE=notebook
-SOURCE=code/baseline.py
+SOURCE=src/baseline.py
 LOGS=./logs/classification/voc07/rn50.baseline
 CONFIG=config/classification/voc07/rn50.baseline.yml
 
