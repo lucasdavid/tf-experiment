@@ -112,6 +112,7 @@ training:
       override:
         backup_dir: paths.ckpt
   finetune:
+    perform: true
     unfreeze:
       layers: 'conv5_block1_1_conv'
       freeze_bn: true
