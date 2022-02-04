@@ -29,6 +29,9 @@ dataset:
     keys:
       - image
       - panoptic_objects.label
+    validation:
+      key: panoptic_objects.label
+      kind: not_empty
     augmentation:
       policy:
         class_name: Simple

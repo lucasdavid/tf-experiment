@@ -15,10 +15,9 @@
 import sys
 from datetime import datetime
 from math import ceil
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
 import tensorflow as tf
-
 
 # region Data
 
@@ -123,16 +122,26 @@ def get_preprocess_fn(preprocess_fn):
 
 # region Generics
 
-def dig(o, prop):
+def dig(
+    o: Optional[Dict],
+    prop: Union[str, List[str]],
+    default: Any = None, 
+    required: bool = False):
+  if not o:
+    if required:
+      raise TypeError(f'Cannot dig key {prop} from None.')
+
+    return default
+
   if isinstance(prop, str):
     prop = prop.split('.')
   
   for p in prop:
-    if p in o:
+    if p in o or required:
       o = o[p]
     else:
-      return None
-  
+      return default
+
   return o
 
 

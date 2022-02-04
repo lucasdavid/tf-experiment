@@ -74,8 +74,6 @@ def object_detection(entry, classes, sizes, keys):
   if sizes is not None:
     image, _ = adjust_resolution(image, sizes)
   
-  bboxes, label = (tf.cast(e, tf.float32) for e in (bboxes, label))
-
   return image, bboxes, label
 
 
@@ -96,6 +94,7 @@ def adjust_resolution(image, sizes):
   xsn = tf.cast(tf.math.ceil(ratio * xs), tf.int32)
 
   image = tf.image.resize(image, xsn, preserve_aspect_ratio=True, method='nearest')
+  image = tf.image.resize_with_crop_or_pad(image, *sizes)
 
   return image, ratio
 

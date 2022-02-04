@@ -19,9 +19,9 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from . import tasks
 from .. import augment, utils
-from ..utils import to_list, unpack
+from ..utils import dig, to_list, unpack
+from . import tasks, validate
 
 
 def load(name, data_dir, splits=('train', 'test')):
@@ -41,6 +41,7 @@ def prepare(
     classes: int,
     take: Optional[int] = None,
     task: str = 'classification',
+    validation: Dict[str, str] = None,
     augmentation: Optional[Dict[str, str]] = None,
     prefetch_buffer_size: Union[int, str] = 'auto',
     parallel_calls: Union[int, str] = 'auto',
@@ -55,7 +56,13 @@ def prepare(
     parallel_calls = tf.data.AUTOTUNE
 
   if shuffle:
-    ds = dataset.shuffle(**shuffle)
+    dataset = dataset.shuffle(**shuffle)
+
+  # Validate entries, filtering out incoformin.
+  v_key = dig(validation, 'key')
+  v_kind = dig(validation, 'kind', default='not_empty')
+  if v_key:
+    dataset = dataset.filter(partial(validate.get(v_kind), key=v_key))
 
   ds = dataset.map(partial(tasks.get(task), classes=classes, sizes=sizes[:2], keys=keys))
 

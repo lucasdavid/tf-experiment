@@ -6,7 +6,7 @@ setup:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/classification/coco17/rn50.baseline/backup/"
+    ckpt: "./logs/classification/coco17/rn50.randaug/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/evaluation.csv"
@@ -30,6 +30,9 @@ dataset:
     keys:
       - image
       - panoptic_objects.label
+    validation:
+      key: panoptic_objects.label
+      kind: not_empty
     augmentation:
       policy:
         class_name: RandAug
@@ -74,22 +77,22 @@ training:
     - Recall
   config:
     epochs: &epochs 35
-    verbose: 2
-  callbacks: &callbacks
+    verbose: 1
+  callbacks:
     - TerminateOnNaN
     - class_name: EarlyStopping
       config:
-        patience: 50
+        patience: 20
         verbose: 1
     - class_name: ReduceLROnPlateau
       config:
         factor: 0.5
-        patience: 10
+        patience: 5
         verbose: 1
     - class_name: TensorBoard
       config:
         log_dir: "./logs/"
-        histogram_freq: 1
+        histogram_freq: 0
         profile_batch: 0
         write_graph: true
       override:
@@ -126,8 +129,45 @@ training:
     config:
       epochs: 100
       initial_epoch: *epochs
-      verbose: 2
-    callbacks: *callbacks
+      verbose: 1
+    callbacks:
+      - TerminateOnNaN
+      - class_name: EarlyStopping
+        config:
+          patience: 20
+          verbose: 1
+      - class_name: ReduceLROnPlateau
+        config:
+          factor: 0.5
+          patience: 5
+          verbose: 1
+      - class_name: TensorBoard
+        config:
+          log_dir: "./logs/"
+          histogram_freq: 1
+          profile_batch: 0
+          write_graph: true
+        override:
+          log_dir: paths.tensorboard
+      - class_name: CSVLogger
+        config:
+          filename: "./history.csv"
+          append: true
+        override:
+          filename: paths.train_history
+      - class_name: ModelCheckpoint
+        config:
+          verbose: 1
+          filepath: "./best.h5"
+          save_best_only: true
+          save_weights_only: true
+        override:
+          filepath: paths.best
+      - class_name: BackupAndRestore
+        config:
+          backup_dir: "/tmp/ckpt"
+        override:
+          backup_dir: paths.ckpt
 evaluation:
   task: classification_multilabel
   report_path: "{valid_report}"
