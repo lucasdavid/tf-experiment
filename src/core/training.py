@@ -14,12 +14,11 @@
 
 import os
 import shutil
-from typing import List
 
 import tensorflow as tf
 
 from .callbacks import get as cb_deserialize
-from .utils import unfreeze_top_layers, try_to_load_weights, dig
+from .utils import dig, try_to_load_weights, unfreeze_top_layers
 
 
 def train_or_restore(
@@ -71,6 +70,10 @@ def train_or_restore(
   if dig(finetune, 'perform'):
     print('-' * 32)
     print('Fine-Tuning Entire Network')
+
+    if os.path.exists(paths['ckpt']):
+      print(f'Cleaning dangling backup folder {paths["ckpt"]}')
+      shutil.rmtree(paths['ckpt'], ignore_errors=True)
 
     with distributed.scope():
       try_to_load_weights(nn, paths['best'])

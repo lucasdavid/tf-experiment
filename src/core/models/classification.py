@@ -24,11 +24,24 @@ from . import backbone as core_backbone
 class DenseKU(Dense):
   """Dense layer with kernel usage regularization.
   """
+  def __init__(self, *args, alpha=1., **kwargs):
+    super().__init__(*args, **kwargs)
+    self.alpha = alpha
+  
+  def get_config(self):
+    config = super().get_config()
+    config.update(
+      alpha=self.alpha,
+    )
+
+    return config
+
   def call(self, inputs):
     kernel = self.kernel
     ag = kernel
     ag = ag - tf.reduce_max(ag, axis=-1, keepdims=True)
     ag = tf.nn.softmax(ag)
+    ag *= self.alpha
 
     outputs = tf.matmul(a=inputs, b=ag * kernel)
 

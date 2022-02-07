@@ -6,7 +6,7 @@ setup:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/classification/coco17/rn50.baseline/backup/"
+    ckpt: "./logs/classification/coco17/rn101.baseline/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/evaluation.csv"
@@ -46,7 +46,7 @@ dataset:
             hue_delta: 0.0
       over: samples
     shuffle:
-      buffer_size: 1000
+      buffer_size: 800
       seed: 4081
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
@@ -123,7 +123,7 @@ training:
   finetune:
     perform: true 
     unfreeze:
-      layers: 'conv5_block1_1_conv'
+      layers: 'conv4_block12_out'
       freeze_bn: true
     optimizer:
       class_name: sgd
