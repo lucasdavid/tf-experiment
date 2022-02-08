@@ -1,6 +1,6 @@
 setup:
   tf_seed: 41820
-  # precision_policy: mixed_float16
+  precision_policy: mixed_float16
   gpus_with_memory_growth: true
   paths:
     data: &paths_data "./data"
@@ -8,7 +8,7 @@ setup:
     best: "{report_dir}/best.h5"
     ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
     export: "{report_dir}/saved_model"
-    train_history: "{report_dir}/train-history.csv"
+    train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
 dataset:
   load:
@@ -23,6 +23,7 @@ dataset:
     sizes: [512, 512, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
+    pad_values: [0, -1]
     pad_drop_remainder: true
     task: classification_multilabel_from_detection
     classes: &classes 20
@@ -52,6 +53,8 @@ model:
     kernel_regularizer: null
     kernel_initializer: null
     layer_class: dense
+    config:
+      alpha: 20
   backbone:
     architecture: ResNet101V2
     weights: imagenet
@@ -71,13 +74,13 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 50
-    verbose: 1
-  callbacks: &callbacks
+    epochs: &epochs 30
+    verbose: 2
+  callbacks:
     - TerminateOnNaN
     - class_name: EarlyStopping
       config:
-        patience: 50
+        patience: 15
         verbose: 1
     - class_name: ReduceLROnPlateau
       config:
@@ -87,7 +90,7 @@ training:
     - class_name: TensorBoard
       config:
         log_dir: "./logs/"
-        histogram_freq: 1
+        histogram_freq: 0
         profile_batch: 0
         write_graph: true
       override:
@@ -114,17 +117,55 @@ training:
   finetune:
     perform: true
     unfreeze:
-      layers: 'conv5_block1_1_conv'
+      layers: 'conv4_block12_out'
       freeze_bn: true
     optimizer:
       class_name: sgd
       config:
         <<: *momentum
-        learning_rate: 0.001
+        learning_rate: 0.01
     config:
       epochs: 100
       initial_epoch: *epochs
-    callbacks: *callbacks
+      verbose: 2
+    callbacks:
+      - TerminateOnNaN
+      - class_name: EarlyStopping
+        config:
+          patience: 40
+          verbose: 1
+      - class_name: ReduceLROnPlateau
+        config:
+          factor: 0.5
+          patience: 10
+          verbose: 1
+      - class_name: TensorBoard
+        config:
+          log_dir: "./logs/"
+          histogram_freq: 1
+          profile_batch: 0
+          write_graph: true
+        override:
+          log_dir: paths.tensorboard
+      - class_name: CSVLogger
+        config:
+          filename: "./history.csv"
+          append: true
+        override:
+          filename: paths.train_history
+      - class_name: ModelCheckpoint
+        config:
+          verbose: 1
+          filepath: "./best.h5"
+          save_best_only: true
+          save_weights_only: true
+        override:
+          filepath: paths.best
+      - class_name: BackupAndRestore
+        config:
+          backup_dir: "/tmp/ckpt"
+        override:
+          backup_dir: paths.ckpt
 evaluation:
   task: classification_multilabel
   report_path: "{valid_report}"

@@ -62,6 +62,7 @@ def build_head(
     layer_class: str = None,
     kernel_initializer: str = None,
     kernel_regularizer: str = None,
+    config: Optional[Dict[str, Any]] = None,
 ):
   y = input_tensor
   
@@ -73,7 +74,8 @@ def build_head(
     units,
     name='head/logits',
     kernel_initializer=kernel_initializer,
-    kernel_regularizer=regularizers.get(kernel_regularizer)
+    kernel_regularizer=regularizers.get(kernel_regularizer),
+    **(config or {}),
   )(y)
   y = Activation(activation, dtype='float32', name='head/predictions')(y)
 

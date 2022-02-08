@@ -7,7 +7,7 @@ sacred
 matplotlib
 seaborn
 
-tensorflow
+tensorflow==2.7.0
 tensorflow-datasets
 tensorflow-addons
 h5py
