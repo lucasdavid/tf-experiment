@@ -83,7 +83,7 @@ def train_or_restore(
     with distributed.scope():
       optimizer = tf.optimizers.get(dict(finetune['optimizer']))
       nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-
+    
     try:
       nn.fit(
           train,

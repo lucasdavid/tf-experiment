@@ -45,7 +45,7 @@ dataset:
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   name: ml_voc07
-  input_shape: [512, 512, 3]
+  input_shape: *image_sizes
   head:
     units: *classes
     activation: sigmoid

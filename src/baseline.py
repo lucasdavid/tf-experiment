@@ -59,8 +59,10 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
     core.boot.gpus_with_memory_growth()
 
   strategy = core.boot.appropriate_distributed_strategy()
-  atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
-  
+
+  if isinstance(strategy, tf.distribute.MirroredStrategy):
+    atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
+
   run_params = core.utils.get_run_params(_run)
   paths = {k: v.format(**run_params) for k, v in setup['paths'].items()}
   for p, v in paths.items():
