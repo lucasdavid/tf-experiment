@@ -28,14 +28,6 @@ class DenseKU(Dense):
     super().__init__(*args, **kwargs)
     self.alpha = alpha
   
-  def get_config(self):
-    config = super().get_config()
-    config.update(
-      alpha=self.alpha,
-    )
-
-    return config
-
   def call(self, inputs):
     kernel = self.kernel
     ag = kernel
@@ -52,6 +44,13 @@ class DenseKU(Dense):
       outputs = self.activation(outputs)
 
     return outputs
+
+  def get_config(self):
+    config = super().get_config()
+    config.update(
+      alpha=self.alpha,
+    )
+    return config
 
 
 def build_head(
