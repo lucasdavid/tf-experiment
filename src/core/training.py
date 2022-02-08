@@ -83,7 +83,7 @@ def train_or_restore(
     with distributed.scope():
       optimizer = tf.optimizers.get(dict(finetune['optimizer']))
       nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
-    
+
     try:
       nn.fit(
           train,
@@ -102,7 +102,7 @@ def train_or_restore(
 
   with distributed.scope():
     try_to_load_weights(nn, paths['best'])
-  
+
   nn.save(paths['export'], save_format='tf')
 
   try:
