@@ -61,6 +61,10 @@ def train_or_restore(
       print('\ninterrupted')
     else:
       print('\ndone')
+      
+      if os.path.exists(paths['ckpt']):
+        print(f'Cleaning dangling backup folder {paths["ckpt"]}')
+        shutil.rmtree(paths['ckpt'], ignore_errors=True)
 
     histories += nn.history.history
   else:
@@ -70,10 +74,6 @@ def train_or_restore(
   if dig(finetune, 'perform'):
     print('-' * 32)
     print('Fine-Tuning Entire Network')
-
-    if os.path.exists(paths['ckpt']):
-      print(f'Cleaning dangling backup folder {paths["ckpt"]}')
-      shutil.rmtree(paths['ckpt'], ignore_errors=True)
 
     with distributed.scope():
       try_to_load_weights(nn, paths['best'])
