@@ -53,3 +53,5 @@ CUDA_VISIBLE_DEVICES=3 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py \
   setup.paths.data=$DATA_DIR                                                  \
   setup.paths.ckpt=$LOGS_DIR/kur/backup                                       \
   -F $LOGS_DIR/kur > $LOGS_DIR/kur.log 2>&1                                   &
+
+wait
