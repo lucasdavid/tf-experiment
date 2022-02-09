@@ -47,7 +47,7 @@ CUDA_VISIBLE_DEVICES=2 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py \
   -F $LOGS_DIR/ortho > $LOGS_DIR/ortho.log 2>&1                               &
 
 CUDA_VISIBLE_DEVICES=3 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py \
-  with $CONFIG_DIR                                                            \
+  with $SRC_DIR/config/classification/voc07/rn101.randaug.kur.yml             \
   model.head.dropout_rate=0                                                   \
   model.head.layer_class=kernel_usage                                         \
   setup.paths.data=$DATA_DIR                                                  \

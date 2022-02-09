@@ -20,7 +20,7 @@ dataset:
       - test
   prepare:
     batch_size: 64
-    sizes: [512, 512, 3]
+    sizes: &image_sizes [512, 512, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
     pad_values: [0, -1]
@@ -45,14 +45,14 @@ dataset:
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
   name: ml_voc07
-  input_shape: [512, 512, 3]
+  input_shape: *image_sizes
   head:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
     kernel_regularizer: null
     kernel_initializer: null
-    layer_class: dense
+    layer_class: kernel_usage
     config:
       alpha: 20
   backbone:
