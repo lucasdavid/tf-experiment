@@ -47,6 +47,10 @@ def report(
  
   print('-' * 32)
   print(str(task).replace('_', ' ').capitalize(), 'Report')
-  print(evaluations.round(4))
+  with pd.option_context(
+      'display.max_rows', None,
+      'display.max_columns', None
+  ):
+    print(evaluations.round(4))
 
   return evaluations

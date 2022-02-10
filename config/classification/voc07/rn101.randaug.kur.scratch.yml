@@ -2,16 +2,11 @@ setup:
   tf_seed: 41820
   precision_policy: mixed_float16
   gpus_with_memory_growth: true
-  wandb:
-    project: salient-segmentation
-    name: voc07-rn101-randuag-kernelusage
-    job_type: train
-    entity: ldavid
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
+    ckpt: "./logs/classification/voc07/rn101.randaug-scratch/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
@@ -55,9 +50,8 @@ model:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
-    batch_norm: false
     kernel_regularizer: null
-    kernel_initializer: glorot_uniform
+    kernel_initializer: null
     layer_class: kernel_usage
     config:
       alpha: 20
@@ -67,7 +61,7 @@ model:
     pooling: avg
     trainable: false
 training:
-  perform: true
+  perform: false
   loss: BinaryCrossentropy
   optimizer:
     class_name: sgd
@@ -82,71 +76,26 @@ training:
   config:
     epochs: &epochs 30
     verbose: 2
-  callbacks:
-    - TerminateOnNaN
-    - class_name: WandbCallback
-        config:
-          save_model: false
-          save_graph: false
-    - class_name: EarlyStopping
-      config:
-        patience: 15
-        verbose: 1
-    - class_name: ReduceLROnPlateau
-      config:
-        factor: 0.5
-        patience: 10
-        verbose: 1
-    - class_name: TensorBoard
-      config:
-        log_dir: "./logs/"
-        histogram_freq: 0
-        profile_batch: 0
-        write_graph: true
-      override:
-        log_dir: paths.tensorboard
-    - class_name: CSVLogger
-      config:
-        filename: "./history.csv"
-        append: true
-      override:
-        filename: paths.train_history
-    - class_name: ModelCheckpoint
-      config:
-        verbose: 1
-        filepath: "./best.h5"
-        save_best_only: true
-        save_weights_only: true
-      override:
-        filepath: paths.best
-    - class_name: BackupAndRestore
-      config:
-        backup_dir: "/tmp/ckpt"
-      override:
-        backup_dir: paths.ckpt
+  callbacks: None
   finetune:
     perform: true
     unfreeze:
-      layers: conv4_block1_out
-      freeze_bn: true
+      layers: 0
+      freeze_bn: false
     optimizer:
       class_name: sgd
       config:
         <<: *momentum
-        learning_rate: 0.001
+        learning_rate: 0.01
     config:
-      epochs: 300
-      initial_epoch: *epochs
+      epochs: 200
+      initial_epoch: 0
       verbose: 2
     callbacks:
       - TerminateOnNaN
-      - class_name: WandbCallback
-        config:
-          save_model: false
-          save_graph: false
       - class_name: EarlyStopping
         config:
-          patience: 50
+          patience: 40
           verbose: 1
       - class_name: ReduceLROnPlateau
         config:

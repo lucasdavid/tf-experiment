@@ -14,6 +14,7 @@
 
 import os
 import shutil
+import sys
 
 import tensorflow as tf
 
@@ -91,6 +92,9 @@ def train_or_restore(
           callbacks=cb_deserialize(finetune['callbacks'], run_params),
           **finetune['config']
       )
+    except FileNotFoundError as error:
+      print(error, file=sys.stderr)
+
     except KeyboardInterrupt:
       print('\ninterrupted')
     else:
@@ -109,7 +113,7 @@ def train_or_restore(
     if os.path.isfile(paths['best']):
       os.remove(paths['best'])
     else:
-      shutil.rmtree(paths['best'])
+      shutil.rmtree(paths['best'], ignore_errors=True)
   except FileNotFoundError:
     ...
 

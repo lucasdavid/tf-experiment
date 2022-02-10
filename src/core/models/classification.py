@@ -60,7 +60,7 @@ def build_head(
     batch_norm: bool = False,
     dropout_rate: Optional[float] = None,
     layer_class: str = None,
-    kernel_initializer: str = None,
+    kernel_initializer: str = 'glorot_uniform',
     kernel_regularizer: str = None,
     config: Optional[Dict[str, Any]] = None,
 ):
@@ -69,7 +69,9 @@ def build_head(
   if batch_norm:
     y = BatchNormalization(name='head/bn')(y)
   
-  y = Dropout(rate=dropout_rate, name='head/drop')(y)
+  if dropout_rate:
+    y = Dropout(rate=dropout_rate, name='head/drop')(y)
+
   y = get(layer_class)(
     units,
     name='head/logits',

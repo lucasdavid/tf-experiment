@@ -32,6 +32,7 @@ Example outline:
 
   The model is evaluated.
 """
+
 import atexit
 
 import tensorflow as tf
@@ -41,8 +42,12 @@ from sacred.utils import apply_backspaces_and_linefeeds
 import core
 from core.utils import dig
 
+import wandb
+
+
 ex = Experiment(save_git_info=False)
 ex.captured_out_filter = apply_backspaces_and_linefeeds
+
 
 
 @ex.main
@@ -50,6 +55,17 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   _log.info(__doc__)
 
   # region Setup
+  wandb.init(
+    config={
+      'setup': setup,
+      'dataset': dataset,
+      'model': model,
+      'training': training,
+      'evaluation': evaluation
+    },
+    **setup['wanddb']
+  )
+
   precision_policy = dig(setup, 'precision_policy')
   if precision_policy:
     tf.keras.mixed_precision.set_global_policy(

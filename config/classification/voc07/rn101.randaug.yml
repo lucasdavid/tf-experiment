@@ -2,11 +2,16 @@ setup:
   tf_seed: 41820
   precision_policy: mixed_float16
   gpus_with_memory_growth: true
+  wandb:
+    project: salient-segmentation
+    name: voc07-rn101-randuag-baseline
+    job_type: train
+    entity: ldavid
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
+    ckpt: "./logs/classification/mixed/rn50.randaug/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
@@ -39,7 +44,7 @@ dataset:
           seed: 10344
       over: batches
     shuffle:
-      buffer_size: 1000
+      buffer_size: 10000
       seed: 4081
       reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
@@ -50,8 +55,9 @@ model:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
+    batch_norm: false
     kernel_regularizer: null
-    kernel_initializer: null
+    kernel_initializer: glorot_uniform
     layer_class: dense
   backbone:
     architecture: ResNet101V2
@@ -76,6 +82,10 @@ training:
     verbose: 2
   callbacks:
     - TerminateOnNaN
+    - class_name: WandbCallback
+        config:
+          save_model: false
+          save_graph: false
     - class_name: EarlyStopping
       config:
         patience: 15
@@ -115,7 +125,7 @@ training:
   finetune:
     perform: true
     unfreeze:
-      layers: 'conv4_block12_out'
+      layers: conv4_block1_out
       freeze_bn: true
     optimizer:
       class_name: sgd
@@ -123,14 +133,18 @@ training:
         <<: *momentum
         learning_rate: 0.01
     config:
-      epochs: 100
+      epochs: 300
       initial_epoch: *epochs
       verbose: 2
     callbacks:
       - TerminateOnNaN
+      - class_name: WandbCallback
+        config:
+          save_model: false
+          save_graph: false
       - class_name: EarlyStopping
         config:
-          patience: 40
+          patience: 50
           verbose: 1
       - class_name: ReduceLROnPlateau
         config:

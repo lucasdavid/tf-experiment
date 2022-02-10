@@ -15,21 +15,27 @@
 import sys
 from datetime import datetime
 from math import ceil
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import tensorflow as tf
 
 # region Data
 
-def normalize(x, reduce_min=True, reduce_max=True):
-  if reduce_min:
-    x -= tf.reduce_min(x, axis=(-3, -2), keepdims=True)
-  if reduce_max:
-    x = tf.math.divide_no_nan(x, tf.reduce_max(x, axis=(-3, -2), keepdims=True))
+def normalize(
+    x: tf.Tensor,
+    reduce_min: bool = True,
+    reduce_max: bool = True,
+    axis: Tuple[int] = (-3, -2)
+):
+  if reduce_min: x -= tf.reduce_min(x, axis=axis, keepdims=True)
+  if reduce_max: x = tf.math.divide_no_nan(x, tf.reduce_max(x, axis=axis, keepdims=True))
 
   return x
 
-def masked(x, maps):
+def masked(
+    x: tf.Tensor,
+    maps: tf.Tensor
+):
   return x * tf.image.resize(maps, x.shape[1:3])
 
 # endregion
@@ -53,21 +59,27 @@ def unfreeze_top_layers(
     idx = int((1 - layers) * len(model.layers))
   else:
     idx = layers
-
-  for ix, l in enumerate(model.layers):
-    l.trainable = (ix > idx
-                   and (not isinstance(l, tf.keras.layers.BatchNormalization)
-                        or not freeze_bn))
+  
+  if idx == 0 and not freeze_bn:
+    model.trainable = True
+  else:
+    for ix, l in enumerate(model.layers):
+      l.trainable = (ix > idx
+                    and (not isinstance(l, tf.keras.layers.BatchNormalization)
+                          or not freeze_bn))
 
   print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers '
         f'(layers={layers} freeze_bn={freeze_bn}). Bottom-most is the '
         f'{idx}-nth layer ({model.layers[idx].name}).')
 
 
-def try_to_load_weights(model, weights):
+def try_to_load_weights(model, weights, raise_on_failure: bool = False):
   try:
     model.load_weights(weights)
-  except FileNotFoundError:
+  except (OSError, FileNotFoundError):
+    if raise_on_failure:
+      raise
+
     print(f'Cannot restore weights from "{weights}".')
 
 # endregion
@@ -171,13 +183,15 @@ def get_run_params(_run):
 
 # region Visualizations
 
-def visualize(image,
-              title=None,
-              rows=2,
-              cols=None,
-              figsize=(16, 7.2),
-              cmap=None,
-              to_file=None):
+def visualize(
+    image,
+    title=None,
+    rows=2,
+    cols=None,
+    figsize=(16, 7.2),
+    cmap=None,
+    to_file=None
+):
   import matplotlib.pyplot as plt
   import seaborn as sns
 

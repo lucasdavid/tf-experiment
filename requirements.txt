@@ -2,14 +2,14 @@ numpy
 scipy
 pandas
 PyYAML
-sacred
+https://github.com/IDSIA/sacred/archive/master.tar.gz
 
 matplotlib
 seaborn
 
 tensorflow==2.7.0
+tensorflow-addons==0.15.0
 tensorflow-datasets
-tensorflow-addons
 h5py
 
 opencv-python
@@ -18,3 +18,5 @@ imgaug
 scikit-learn
 scikit-image
 joblib
+
+wandb

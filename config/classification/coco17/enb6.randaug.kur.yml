@@ -1,28 +1,28 @@
 setup:
-  tf_seed: 41820
+  tf_seed: 72142
   precision_policy: mixed_float16
   gpus_with_memory_growth: true
   wandb:
     project: salient-segmentation
-    name: voc07-rn101-randuag-kernelusage
+    name: coco17-enb6-randuag-kernelusage
     job_type: train
     entity: ldavid
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
+    ckpt: "./logs/classification/mixed/rn50.randaug/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
 dataset:
   load:
-    name: 'voc/2007'
+    name: 'coco/2017_panoptic'
     data_dir: *paths_data
     splits:
       - train
       - validation
-      - test
+      - validation
   prepare:
     batch_size: 64
     sizes: &image_sizes [512, 512, 3]
@@ -31,10 +31,13 @@ dataset:
     pad_values: [0, -1]
     pad_drop_remainder: true
     task: classification_multilabel_from_detection
-    classes: &classes 20
+    classes: &classes 133
     keys:
       - image
-      - objects.label
+      - panoptic_objects.label
+    validation:
+      key: panoptic_objects.label
+      kind: not_empty
     augmentation:
       policy:
         class_name: RandAug
@@ -47,9 +50,9 @@ dataset:
       buffer_size: 10000
       seed: 4081
       reshuffle_each_iteration: true
-    preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+    preprocess_fn: null
 model:
-  name: ml_voc07
+  name: ml_coco17
   input_shape: *image_sizes
   head:
     units: *classes
@@ -60,7 +63,7 @@ model:
     kernel_initializer: glorot_uniform
     layer_class: kernel_usage
     config:
-      alpha: 20
+      alpha: 133
   backbone:
     architecture: ResNet101V2
     weights: imagenet
@@ -80,8 +83,8 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 30
-    verbose: 2
+    epochs: &epochs 50
+    verbose: 2 
   callbacks:
     - TerminateOnNaN
     - class_name: WandbCallback
@@ -90,7 +93,7 @@ training:
           save_graph: false
     - class_name: EarlyStopping
       config:
-        patience: 15
+        patience: 20
         verbose: 1
     - class_name: ReduceLROnPlateau
       config:
@@ -125,7 +128,7 @@ training:
       override:
         backup_dir: paths.ckpt
   finetune:
-    perform: true
+    perform: true 
     unfreeze:
       layers: conv4_block1_out
       freeze_bn: true
@@ -133,7 +136,7 @@ training:
       class_name: sgd
       config:
         <<: *momentum
-        learning_rate: 0.001
+        learning_rate: 0.01
     config:
       epochs: 300
       initial_epoch: *epochs
