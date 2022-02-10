@@ -86,9 +86,9 @@ training:
   callbacks:
     - TerminateOnNaN
     - class_name: WandbCallback
-        config:
-          save_model: false
-          save_graph: false
+      config:
+        save_model: false
+        save_graph: false
     - class_name: EarlyStopping
       config:
         patience: 20
