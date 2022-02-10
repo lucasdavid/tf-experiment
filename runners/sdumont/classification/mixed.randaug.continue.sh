@@ -2,11 +2,11 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH -p sequana_gpu_shared
-#SBATCH -J lerdl_voc07_rn101_randaug_all
+#SBATCH -J lerdl_mixed_randaug
 #SBATCH -o /scratch/lerdl/lucas.david/logs/mixed/rn101-randaug/%j.out
 #SBATCH --time=24:00:00
 
-echo "[train.voc07.randaug.sh] started running at $(date +'%Y-%m-%d %H:%M:%S')."
+echo "[train.mixed.randaug.sh] started running at $(date +'%Y-%m-%d %H:%M:%S')."
 
 nodeset -e $SLURM_JOB_NODELIST
 
@@ -19,8 +19,6 @@ LOGS_DIR=$SCRATCH/logs/mixed/rn101-randaug
 DATA_DIR=$SCRATCH/datasets
 
 cd $SRC_DIR
-
-pip install -r requirements.txt
 
 CUDA_VISIBLE_DEVICES=0 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py \
   with $SRC_DIR/config/classification/voc07/rn101.randaug.yml                 \

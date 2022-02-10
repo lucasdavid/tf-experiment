@@ -83,8 +83,9 @@ training:
     optimizer:
       class_name: sgd
       config:
-        <<: *momentum
         learning_rate: 0.01
+        momentum: 0.9
+        nesterov: true
     config:
       epochs: 200
       initial_epoch: 0
