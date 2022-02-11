@@ -18,6 +18,7 @@ CONFIG_DIR=$SRC_DIR/config/classification.cityscapes.yml
 LOGS_DIR=$SCRATCH/logs/cityscapes/baseline/
 
 cd $SRC_DIR
+source ../config/sdumont/.env
 
 pip3.9 install -r requirements.txt
 # python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py with $CONFIG_DIR -F $LOGS_DIR

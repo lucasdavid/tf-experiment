@@ -19,6 +19,7 @@ LOGS_DIR=$SCRATCH/logs/mixed/rn101-randaug
 DATA_DIR=$SCRATCH/datasets
 
 cd $SRC_DIR
+source ../config/sdumont/.env
 
 CUDA_VISIBLE_DEVICES=2 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py \
   with $SRC_DIR/config/classification/coco17/rn101.randaug.yml                \

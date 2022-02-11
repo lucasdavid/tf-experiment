@@ -4,9 +4,15 @@ setup:
   gpus_with_memory_growth: true
   wandb:
     project: salient-segmentation
-    name: coco17-rn101-randuag-kernelusage
+    name: kur-d
     job_type: train
     entity: ldavid
+    resume: true
+    tags:
+      - coco17
+      - rn101
+      - randaug
+      - kernel-usage-reg
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
@@ -15,6 +21,10 @@ setup:
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
+    wandb_dir: "{report_dir}/wandb"
+    train_samples: "{report_dir}/train.jpg"
+    valid_samples: "{report_dir}/valid.jpg"
+    test_samples: "{report_dir}/test.jpg"
 dataset:
   load:
     name: 'coco/2017_panoptic'

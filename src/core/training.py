@@ -19,7 +19,7 @@ import sys
 import tensorflow as tf
 
 from .callbacks import get as cb_deserialize
-from .utils import dig, try_to_load_weights, unfreeze_top_layers
+from .utils import dig, log_begin, try_to_load_weights, unfreeze_top_layers
 
 
 def train_or_restore(
@@ -38,8 +38,7 @@ def train_or_restore(
     paths,
     distributed,
 ):
-  print('-' * 32)
-  print('Training Classification Head')
+  log_begin('Training Classification Head', with_arguments=False)
 
   with distributed.scope():
     loss = tf.losses.get(loss)
@@ -73,8 +72,7 @@ def train_or_restore(
           f'previously trained model from "{paths["best"]}"')
 
   if dig(finetune, 'perform'):
-    print('-' * 32)
-    print('Fine-Tuning Entire Network')
+    log_begin('Fine-Tuning Entire Network')
 
     with distributed.scope():
       try_to_load_weights(nn, paths['best'])

@@ -13,15 +13,14 @@
 # limitations under the License.
 
 from functools import partial
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-from .. import augment, utils
-from ..utils import dig, to_list, unpack
-from . import tasks, validate
+from ..utils import dig, to_list, unpack, get_preprocess_fn
+from . import augment, tasks, validate
 
 
 def load(name, data_dir, splits=('train', 'test')):
@@ -97,13 +96,17 @@ def prepare(
     raise ValueError(f'Illegal value "{over}" for augmentation.over config.')
 
   if take: ds = ds.take(take)
-  if preprocess_fn:
-    preprocess_fn = utils.get_preprocess_fn(preprocess_fn)
-    ds = ds.map(lambda x, *y: (preprocess_fn(tf.cast(x, tf.float32)), *y), num_parallel_calls=parallel_calls)
-  else:
-    ds = ds.map(lambda x, *y: (tf.cast(x, tf.float32), *y), num_parallel_calls=parallel_calls)
 
-  return ds.prefetch(prefetch_buffer_size)
+  if preprocess_fn:
+    pfn = get_preprocess_fn(preprocess_fn)
+    ds = ds.map(lambda x, *y: (pfn(tf.cast(x, tf.float32)), *y), parallel_calls)
+  else:
+    ds = ds.map(lambda x, *y: (tf.cast(x, tf.float32), *y), parallel_calls)
+
+  if prefetch_buffer_size:
+    ds = ds.prefetch(prefetch_buffer_size)
+
+  return ds
 
 
 def load_and_prepare(
@@ -122,7 +125,7 @@ def load_and_prepare(
   return train, valid, test, info
 
 
-def classes(info):
+def classes(info) -> List[str]:
   labels_key = [k for k in info.features.keys() if k.startswith('label')]
 
   if not labels_key:

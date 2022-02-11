@@ -19,6 +19,7 @@ CONFIG_DIR=$SRC_DIR/config/classification/cifar10/eb0.randaug.yml
 LOGS_DIR=$SCRATCH/logs/cifar10/eb0-randaug/
 
 cd $SRC_DIR
+source ../config/sdumont/.env
 
 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py with $CONFIG_DIR \
   model.head.kernel_initializer=orthogonal \

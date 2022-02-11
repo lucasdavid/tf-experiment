@@ -14,7 +14,6 @@
 
 import sys
 from datetime import datetime
-from math import ceil
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import tensorflow as tf
@@ -86,38 +85,59 @@ def try_to_load_weights(model, weights, raise_on_failure: bool = False):
 
 # region Logging
 
-def log_begin(fun_name, *args, **kwargs):
+def log_begin(
+    fun_name: str,
+    *args,
+    with_margins: bool = True,
+    with_arguments: bool = True,
+    **kwargs
+):
   now = datetime.now()
 
-  print(f'[{fun_name} started at {now}]')
+  if with_margins: print('_' * 65)
+  print(fun_name)
+  print(f'  started at: {now}')
 
-  max_param_size = max(list(map(len, kwargs.keys())) or [0])
+  if with_arguments:
+    max_param_size = max(list(map(len, kwargs.keys())) or [0])
 
-  print('  args:')
-  print('    ' + '\n    '.join(map(str, args)))
+    print('  args:')
+    print('    ' + '\n    '.join(map(str, args)))
 
-  for k, v in kwargs.items():
-    print(f'  {k:<{max_param_size}} = {v}')
-  print()
+    for k, v in kwargs.items():
+      print(f'  {k:<{max_param_size}} = {v}')
+    print()
 
   return now
 
 
-def log_end(fun_name: str, started: datetime = None):
-  now = datetime.now()
-  elapsed = now - started if started else 'unknown'
-  print(f'[{fun_name} ended at {now} ({elapsed} elapsed)]')
+def log_end(
+    fun_name: str,
+    started: datetime = None,
+    with_margins: bool = True):
+  if started:
+    now = datetime.now()
+    elapsed = now - started
+    print(f'{fun_name} ended at {now} ({elapsed} elapsed)')
+  if with_margins: print('_' * 65)
 
 
-def logged(fn):
-  def _log_wrapper(*args, **kwargs):
-    started = log_begin(fn.__name__, *args, **kwargs)
-    r = fn(*args, **kwargs)
-    log_end(fn.__name__, started)
+def logged(name=None, with_margins=True, with_arguments=True):
+  def decorator(fn):
+    def _log_wrapper(*args, **kwargs):
+      started = log_begin(
+        name or fn.__name__,
+        *args,
+        with_margins=with_margins,
+        with_arguments=with_arguments,
+        **kwargs
+      )
+      r = fn(*args, **kwargs)
+      log_end(fn.__name__, started)
 
-    return r
-
-  return _log_wrapper
+      return r
+    return _log_wrapper
+  return decorator
 
 
 def get_preprocess_fn(preprocess_fn):
@@ -163,68 +183,5 @@ def to_list(x):
 
 def unpack(x):
   return x[0] if isinstance(x, (list, tuple)) and len(x) == 1 else x
-
-# endregion
-
-# region Sacred
-
-def get_run_params(_run):
-  report_dir = None
-
-  if _run.observers:
-    for o in _run.observers:
-      if hasattr(o, 'dir'):
-        report_dir = o.dir
-        break
-
-  return {'report_dir': report_dir}
-
-# endregion
-
-# region Visualizations
-
-def visualize(
-    image,
-    title=None,
-    rows=2,
-    cols=None,
-    figsize=(16, 7.2),
-    cmap=None,
-    to_file=None
-):
-  import matplotlib.pyplot as plt
-  import seaborn as sns
-
-  sns.set_style("whitegrid", {'axes.grid': False})
-
-  if image is not None:
-    if isinstance(image, (list, tuple)) or len(image.shape) > 3:  # many images
-      plt.figure(figsize=figsize)
-      cols = cols or ceil(len(image) / rows)
-      for ix in range(len(image)):
-        plt.subplot(rows, cols, ix + 1)
-        visualize(
-            image[ix],
-            cmap=cmap,
-            title=title[ix] if title is not None and len(title) > ix else None)
-      
-      plt.tight_layout()
-      plt.subplots_adjust(wspace=0, hspace=0)
-
-      if to_file is not None:
-        print('saving graphics to', to_file)
-        plt.savefig(to_file)
-
-      return
-
-    if isinstance(image, tf.Tensor):
-      image = image.numpy()
-    if image.shape[-1] == 1:
-      image = image[..., 0]
-    plt.imshow(image, cmap=cmap)
-
-  if title is not None:
-    plt.title(title)
-  plt.axis('off')
 
 # endregion

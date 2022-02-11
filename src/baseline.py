@@ -16,7 +16,7 @@ Baseline Experiment.
 
 Example outline:
 
-  TFDS dataset → images → ResNet50 → softmax → predictions
+  TFDS dataset → images → CNN → activation-fn → predictions
 
   The {dataset.name} dataset is loaded from TFDS, and a 
   {dataset.prepare.task} is extracted from it, resulting in a
@@ -33,67 +33,36 @@ Example outline:
   The model is evaluated.
 """
 
-import atexit
 
-import tensorflow as tf
 from sacred import Experiment
 from sacred.utils import apply_backspaces_and_linefeeds
 
 import core
-from core.utils import dig
-
-import wandb
-
 
 ex = Experiment(save_git_info=False)
 ex.captured_out_filter = apply_backspaces_and_linefeeds
-
 
 
 @ex.main
 def run(setup, dataset, model, training, evaluation, _log, _run):
   _log.info(__doc__)
 
-  # region Setup
-  wandb.init(
-    config={
-      'setup': setup,
-      'dataset': dataset,
-      'model': model,
-      'training': training,
-      'evaluation': evaluation
-    },
-    **setup['wanddb']
-  )
-
-  precision_policy = dig(setup, 'precision_policy')
-  if precision_policy:
-    tf.keras.mixed_precision.set_global_policy(
-      tf.keras.mixed_precision.Policy(precision_policy))
-
-  if dig(setup, 'gpus_with_memory_growth'):
-    core.boot.gpus_with_memory_growth()
-
-  strategy = core.boot.appropriate_distributed_strategy()
-
-  if isinstance(strategy, tf.distribute.MirroredStrategy):
-    atexit.register(strategy._extended._collective_ops._pool.close) # type: ignore
-
-  run_params = core.utils.get_run_params(_run)
-  paths = {k: v.format(**run_params) for k, v in setup['paths'].items()}
-  for p, v in paths.items():
-    run_params[f'paths.{p}'] = v
-  # endregion
+  experiment_config = {
+    'setup': setup,
+    'dataset': dataset,
+    'model': model,
+    'training': training,
+    'evaluation': evaluation
+  }
+  ex = core.experiment.setup(_run, experiment_config, **setup)
 
   train, valid, test, info = core.datasets.tfds.load_and_prepare(dataset)
 
-  to_file = f'{run_params["report_dir"]}/images.jpg'
-  (x, y), = train.take(1).as_numpy_iterator()
-  core.utils.visualize((127.5*(x+1.)).astype('uint8'), rows=4, figsize=(20, 4), to_file=to_file)
+  core.datasets.save_image_samples(train.take(1), ex.paths['train_samples'])
+  core.datasets.save_image_samples(valid.take(1), ex.paths['valid_samples'])
+  core.datasets.save_image_samples(test.take(1), ex.paths['test_samples'])
 
-  del x, y
-
-  with strategy.scope():
+  with ex.distributed_strategy.scope():
     model, backbone = core.models.classification.build_model(**model)
     core.models.summary(model, _log.info)
 
@@ -102,9 +71,9 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
     backbone,
     train,
     valid,
-    run_params=run_params,
-    distributed=strategy,
-    paths=paths,
+    run_params=ex.run_params,
+    distributed=ex.distributed_strategy,
+    paths=ex.paths,
     **training
   )
 
@@ -113,11 +82,10 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
     test,
     task=evaluation['task'],
     classes=core.datasets.tfds.classes(info),
+    report_path=evaluation['report_path'].format(**ex.paths)
   )
 
-  report_path = evaluation['report_path'].format(**paths)
-  print(f'Saving evaluation report at {report_path}')
-  evaluations.to_csv(report_path, index=False)
+  ex.wandb_run.finish()
 
 
 if __name__ == '__main__':

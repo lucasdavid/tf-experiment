@@ -7,6 +7,12 @@ setup:
     name: coco17-enb6-randuag-kernelusage
     job_type: train
     entity: ldavid
+    resume: true
+    tags:
+      - coco17
+      - efficientnet
+      - randaug
+      - kernel-usage-reg
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
@@ -15,6 +21,7 @@ setup:
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
+    wandb_dir: "{report_dir}/wandb"
 dataset:
   load:
     name: 'coco/2017_panoptic'
@@ -65,7 +72,7 @@ model:
     config:
       alpha: 133
   backbone:
-    architecture: ResNet101V2
+    architecture: EfficientNetB6
     weights: imagenet
     pooling: avg
     trainable: false
@@ -130,7 +137,7 @@ training:
   finetune:
     perform: true 
     unfreeze:
-      layers: conv4_block1_out
+      layers: block3b_add
       freeze_bn: true
     optimizer:
       class_name: sgd

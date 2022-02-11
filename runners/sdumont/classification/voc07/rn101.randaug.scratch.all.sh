@@ -20,6 +20,7 @@ LOGS_DIR=$SCRATCH/logs/voc07/rn101-randaug-scratch
 DATA_DIR=$SCRATCH/datasets
 
 cd $SRC_DIR
+source ../config/sdumont/.env
 
 CUDA_VISIBLE_DEVICES=0 python3.9 -X pycache_prefix=$BUILD_DIR src/baseline.py \
   with $CONFIG_DIR                                                            \

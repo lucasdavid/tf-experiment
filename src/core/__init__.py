@@ -1,17 +1,9 @@
-from . import (
-  augment,
-  boot,
-  datasets,
-  inference,
-  models,
-  testing,
-  training,
-  utils
-)
+from . import (augment, datasets, experiment, inference, models, testing,
+               training, utils)
 
 __all__ = [
   'augment',
-  'boot',
+  'experiment',
   'utils',
   'datasets', 
   'models',

@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from . import cityscapes_small, tfds
+from .utils import save_image_samples
 
 __all__ = [
   'cityscapes_small',
   'tfds',
+  'save_image_samples',
 ]

@@ -10,6 +10,10 @@ setup:
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/train-history.csv"
     valid_report: "{report_dir}/evaluation.csv"
+    wandb_dir: "{report_dir}/wandb"
+    train_samples: "{report_dir}/train.jpg"
+    valid_samples: "{report_dir}/valid.jpg"
+    test_samples: "{report_dir}/test.jpg"
 dataset:
   load:
     name: 'coco/2017_panoptic'

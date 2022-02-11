@@ -19,6 +19,7 @@ CONFIG_DIR=$SRC_DIR/config/classification/voc07/rn101.randaug.yml
 LOGS_DIR=$SCRATCH/logs/voc07/rn101-randaug/
 
 cd $SRC_DIR
+source ../config/sdumont/.env
 
 pip3.9 install -r requirements.txt
 

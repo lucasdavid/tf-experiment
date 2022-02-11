@@ -1,26 +1,41 @@
 setup:
   tf_seed: 41820
-  # precision_policy: mixed_float16
-  # gpus_with_memory_growth: true
+  precision_policy: mixed_float16
+  gpus_with_memory_growth: true
+  wandb:
+    project: salient-segmentation
+    name: voc12-rn101-randuag-baseline
+    job_type: train
+    entity: ldavid
+    resume: true
+    tags:
+      - voc12
+      - rn101
+      - randaug
+      - baseline
   paths:
     data: &paths_data "./data"
     tensorboard: "{report_dir}"
     best: "{report_dir}/best.h5"
-    ckpt: "./logs/classification/voc07/rn50.randaug/backup/"
+    ckpt: "./logs/classification/voc12/rn101.randaug/backup/"
     export: "{report_dir}/saved_model"
     train_history: "{report_dir}/training.csv"
     valid_report: "{report_dir}/evaluation.csv"
+    wandb_dir: "{report_dir}/wandb"
+    train_samples: "{report_dir}/train.jpg"
+    valid_samples: "{report_dir}/valid.jpg"
+    test_samples: "{report_dir}/test.jpg"
 dataset:
   load:
-    name: 'voc/2007'
+    name: 'voc/2012'
     data_dir: *paths_data
     splits:
       - train
       - validation
-      - test
+      - validation
   prepare:
-    batch_size: 8
-    sizes: [32, 32, 3]
+    batch_size: 64
+    sizes: &image_sizes [512, 512, 3]
     prefetch_buffer_size: auto
     parallel_calls: auto
     pad_values: [0, -1]
@@ -38,20 +53,21 @@ dataset:
           m: 7
           seed: 10344
       over: batches
-    # shuffle:
-    #   buffer_size: 1000
-    #   seed: 4081
-    #   reshuffle_each_iteration: true
+    shuffle:
+      buffer_size: 10000
+      seed: 4081
+      reshuffle_each_iteration: true
     preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
 model:
-  name: ml_voc07
+  name: ml_voc12
   input_shape: *image_sizes
   head:
     units: *classes
     activation: sigmoid
     dropout_rate: 0.2
+    batch_norm: false
     kernel_regularizer: null
-    kernel_initializer: null
+    kernel_initializer: glorot_uniform
     layer_class: dense
   backbone:
     architecture: ResNet101V2
@@ -72,18 +88,22 @@ training:
     - Precision
     - Recall
   config:
-    epochs: &epochs 5
+    epochs: &epochs 30
     verbose: 2
   callbacks:
     - TerminateOnNaN
+    - class_name: WandbCallback
+      config:
+        save_model: false
+        save_graph: false
     - class_name: EarlyStopping
       config:
-        patience: 4
+        patience: 15
         verbose: 1
     - class_name: ReduceLROnPlateau
       config:
         factor: 0.5
-        patience: 2
+        patience: 10
         verbose: 1
     - class_name: TensorBoard
       config:
@@ -115,27 +135,32 @@ training:
   finetune:
     perform: true
     unfreeze:
-      layers: 'conv4_block12_out'
+      layers: conv4_block1_out
       freeze_bn: true
     optimizer:
       class_name: sgd
       config:
-        <<: *momentum
-        learning_rate: 0.01
+        learning_rate: 0.001
+        momentum: 0.9
+        nesterov: true
     config:
-      epochs: 10
+      epochs: 300
       initial_epoch: *epochs
       verbose: 2
     callbacks:
       - TerminateOnNaN
+      - class_name: WandbCallback
+        config:
+          save_model: false
+          save_graph: false
       - class_name: EarlyStopping
         config:
-          patience: 4
+          patience: 50
           verbose: 1
       - class_name: ReduceLROnPlateau
         config:
           factor: 0.5
-          patience: 2
+          patience: 10
           verbose: 1
       - class_name: TensorBoard
         config:
