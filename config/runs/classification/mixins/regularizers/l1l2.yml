@@ -1,0 +1,3 @@
+model:
+  head:
+    kernel_regularizer: l1l2

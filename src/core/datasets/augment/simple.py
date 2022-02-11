@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import Dict, Tuple, Union
 
 import numpy as np
@@ -41,6 +42,9 @@ class Simple(Default):
       over: str = 'samples',
       element_spec: Tuple[tf.TensorSpec] = None,
   ) -> tf.data.Dataset:
+    print(f'  simple augment over dataset:')
+    pprint(self.constraints)
+
     return dataset.map(
       lambda x, *y: (self.augment(x), *y),
       num_parallel_calls=num_parallel_calls)

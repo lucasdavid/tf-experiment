@@ -1,13 +1,27 @@
+# Copyright 2021 Lucas Oliveira David
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
 import tensorflow as tf
 from keras.utils.generic_utils import (deserialize_keras_object,
                                        serialize_keras_object)
 
-from . import constants
 from .utils import normalize
 
 
 @tf.function
-def cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
+def cam(model, x, y, w, threshold=0.5):
   print(f'CAM tracing x:{x.shape} y:{y.shape}')
 
   l, a = model(x, training=False)
@@ -17,7 +31,7 @@ def cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
 
 
 @tf.function
-def gradcampp(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
+def gradcampp(model, x, y, w, threshold=0.5):
   print(f'Grad-CAM++ tracing x:{x.shape} y:{y.shape}')
 
   with tf.GradientTape(watch_accessed_variables=False) as tape:
@@ -40,7 +54,7 @@ def gradcampp(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
   return s, maps
 
 
-def scorecam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD, acts_used=None):
+def scorecam(model, x, y, w, threshold=0.5, acts_used=None):
   l, a = model(x, training=False)
 
   if acts_used == 'all' or acts_used is None:
@@ -74,7 +88,7 @@ def _scorecam_feed(model, x, ak, sizes):
 
 
 @tf.function
-def minmax_cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
+def minmax_cam(model, x, y, w, threshold=0.5):
   print(f'MinMax-CAM (tracing x:{x.shape} p:{y.shape})')
 
   l, a = model(x, training=False)
@@ -95,7 +109,7 @@ def minmax_cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
 
 
 @tf.function
-def d_minmax_cam(model, x, y, w, threshold=constants.CLASSIFICATION_THRESHOLD):
+def d_minmax_cam(model, x, y, w, threshold=0.5):
   print(f'D-MinMax-CAM (tracing x:{x.shape} y={y.shape})')
 
   l, a = model(x, training=False)

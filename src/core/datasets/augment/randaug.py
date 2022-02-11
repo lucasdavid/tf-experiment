@@ -32,6 +32,8 @@ class RandAug(Default):
       over: str = 'samples',
       element_spec: Tuple[tf.TensorSpec] = None,
   ) -> tf.data.Dataset:
+    print(f'  rand augmenting dataset')
+
     out_dtype = element_spec[0].dtype
     out_shape = element_spec[0].shape
     
@@ -39,5 +41,5 @@ class RandAug(Default):
       out_shape = [None, *out_shape]
 
     return dataset.map(
-      lambda x, y: (tf.ensure_shape(tf.py_function(self.augment, inp=[x], Tout=out_dtype), out_shape), y),
+      lambda x, *y: (tf.ensure_shape(tf.py_function(self.augment, inp=[x], Tout=out_dtype), out_shape), *y),
       num_parallel_calls=num_parallel_calls)

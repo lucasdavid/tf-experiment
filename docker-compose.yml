@@ -2,8 +2,7 @@ version: "2.3"
 services:
   notebook:
     image: ldavid/salient-segmentation
-    # user: "${UID}:${GID}"
-    runtime: nvidia
+    # runtime: nvidia  # when GPUs are available
     build:
       dockerfile: ./config/docker/Dockerfile
       context: .
@@ -18,6 +17,6 @@ services:
       - ./notebooks:/tf/notebooks
       - ./config:/tf/config
       - ./logs:/tf/logs
-      - ./src:/tf/code
+      - ./src:/tf/src
       - ./data:/tf/data
       - ./data/cached/.cache:/root/.cache

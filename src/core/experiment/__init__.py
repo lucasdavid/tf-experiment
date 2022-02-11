@@ -11,15 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 import atexit
+import os
+import sys
 from pprint import pprint
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 import wandb as wandb_lib
 
-from ..utils import logged
+from ..utils import dig, logged
+from ..vis import visualize
 from .sacred_utils import get_run_params
 
 
@@ -44,6 +50,64 @@ class Experiment:
     self.run_params = run_params
     self.paths = paths
 
+  def finish(self):
+    if self.wandb_run:
+      self.wandb_run.finish(quiet=True)
+    
+    return self
+
+  def log_examples(self, train=None, test=None, valid=None):
+    for name, ds in zip('train valid test'.split(), (train, valid, test)):
+
+      if ds is not None:
+        key = f'{name}_samples'
+
+        (x, *_), = ds.take(1).as_numpy_iterator()
+        x = (127.5*(x+1.)).clip(0, 255).astype('uint8')
+
+        # save in wandb
+        wandb_lib.log({f'samples/{name}': [wandb_lib.Image(img) for img in x]})
+
+        # save in disk
+        path = dig(self.paths, key)
+        if path:
+          try: visualize(x, rows=4, figsize=(20, 4), to_file=path)
+          except Exception as ex: print(f'failed to save image samples: {len(ex)}', sys.stderr)
+        del x
+
+  def log_evaluations(
+      self,
+      evaluations: pd.DataFrame,
+  ):
+    path = dig(self.paths, 'evaluation_report')
+    if path:
+      print(f'Saving evaluation report at {path}')
+      evaluations.to_csv(path, index=False)
+
+    if self.wandb_run:
+      self.wandb_run.log({
+        'evaluations': wandb_lib.Table(dataframe=evaluations)
+      })
+  
+    return self
+
+  def log_weights(
+    self,
+    names: List[str],
+    weights: tf.Tensor,
+  ):
+    weights = weights.numpy()
+
+    path = dig(self.paths, 'weights_report')
+    if path:
+      print(f'Saving evaluation report at {path}')
+      np.savetxt(path, weights)
+
+    if self.wandb_run:
+      self.wandb_run.log({f'weights/{name}': wandb_lib.Histogram(weights[:, idx])
+                          for idx, name in enumerate(names)})
+
+    return self
 
 def set_gpus_to_memory_growth():
   print('  setting gpus to memory growth mode')
@@ -85,25 +149,30 @@ def setup(
   # Override paths with run-specific properties.
   run_params = get_run_params(sacred_run)
   paths = {k: v.format(**run_params) for k, v in paths.items()}
-  for p, v in paths.items():
-    run_params[f'paths.{p}'] = v
 
   print('  run params:')
   pprint(run_params, indent=4)
   print('  paths:')
   pprint(paths, indent=4)
 
-  # Setup Wandb connection.
-  wandb = dict(**wandb) if wandb else {}
-  if 'wandb_dir' in paths:
-    wandb['dir'] = paths['wandb_dir']
+  for p, v in paths.items():
+    run_params[f'paths.{p}'] = v
 
-  wandb_run = wandb_lib.init(config=experiment_config, **wandb)
+  # Setup Wandb connection.
+  if wandb:
+    wandb = dict(**wandb)
+    if 'wandb_dir' in paths:
+      os.makedirs(paths['wandb_dir'], exist_ok=True)
+      wandb['dir'] = paths['wandb_dir']
+
+    wandb_run = wandb_lib.init(config=experiment_config, **wandb)
+  else:
+    wandb_run = None
 
   # Setup tensorflow args.
   if tf_seed:
     print('  seeding tf with', tf_seed)
-    tf.random.seed(tf_seed)
+    tf.random.set_seed(tf_seed)
 
   if precision_policy:
     print('  setting precision policy to', precision_policy)
@@ -125,8 +194,8 @@ def setup(
 
   return Experiment(
     mixed_precision_policy,
-    gpus_with_memory_growth,
     distributed_strategy,
+    gpus_with_memory_growth,
     sacred_run,
     wandb_run,
     experiment_config,

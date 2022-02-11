@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 from typing import Any, Dict, List, Optional
 
@@ -29,13 +30,7 @@ class DenseKU(Dense):
     self.alpha = alpha
   
   def call(self, inputs):
-    kernel = self.kernel
-    ag = kernel
-    ag = ag - tf.reduce_max(ag, axis=-1, keepdims=True)
-    ag = tf.nn.softmax(ag)
-    ag *= self.alpha
-
-    outputs = tf.matmul(a=inputs, b=ag * kernel)
+    outputs = tf.matmul(a=inputs, b=self.regularized_kernel)
 
     if self.use_bias:
       outputs = tf.nn.bias_add(outputs, self.bias)
@@ -44,6 +39,16 @@ class DenseKU(Dense):
       outputs = self.activation(outputs)
 
     return outputs
+  
+  @property
+  def regularized_kernel(self):
+    kernel = self.kernel
+    ag = kernel
+    ag = ag - tf.reduce_max(ag, axis=-1, keepdims=True)
+    ag = tf.nn.softmax(ag)
+    ag *= self.alpha
+
+    return ag * kernel
 
   def get_config(self):
     config = super().get_config()

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 from typing import Callable, List, Optional, Union
 
@@ -24,19 +25,14 @@ from . import explanations, tasks
 def evaluate(
     model: tf.keras.Model,
     dataset: tf.data.Dataset,
+    classes: List[str],
     task: Union[str, Callable],
-    classes: List[str] = None,
-    report_path: Optional[str] = None
 ):
   print('-' * 32)
   print(f'Evaluation {str(task)}')
 
   outputs = target_and_output(model, dataset)
-  evaluations = report(*outputs, task, classes)
-
-  if report_path:
-    print(f'Saving evaluation report at {report_path}')
-    evaluations.to_csv(report_path, index=False)
+  evaluations = report(outputs, task, classes)
 
   return evaluations
 

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 import os
 import shutil
@@ -22,7 +23,7 @@ from .callbacks import get as cb_deserialize
 from .utils import dig, log_begin, try_to_load_weights, unfreeze_top_layers
 
 
-def train_or_restore(
+def train_head_and_finetune(
     nn,
     backbone,
     train,
@@ -30,6 +31,7 @@ def train_or_restore(
     run_params,
     perform,
     loss,
+    scale_loss,
     optimizer,
     metrics,
     config,
@@ -38,11 +40,14 @@ def train_or_restore(
     paths,
     distributed,
 ):
-  log_begin('Training Classification Head', with_arguments=False)
+  log_begin('Training Classification Head')
 
   with distributed.scope():
     loss = tf.losses.get(loss)
     optimizer = tf.optimizers.get(dict(optimizer))
+    if scale_loss:
+      optimizer = tf.mixed_precision.LossScaleOptimizer(optimizer)
+
     metrics = [tf.metrics.get(m) for m in metrics]
 
     nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
@@ -81,6 +86,9 @@ def train_or_restore(
 
     with distributed.scope():
       optimizer = tf.optimizers.get(dict(finetune['optimizer']))
+      if scale_loss:
+        optimizer = tf.mixed_precision.LossScaleOptimizer(optimizer)
+
       nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
     try:
@@ -119,5 +127,5 @@ def train_or_restore(
 
 
 __all__ = [
-    'train_or_restore',
+    'train_head_and_finetune',
 ]

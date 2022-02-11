@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 import sys
 from datetime import datetime
@@ -98,7 +99,7 @@ def log_begin(
   print(fun_name)
   print(f'  started at: {now}')
 
-  if with_arguments:
+  if with_arguments and args and kwargs:
     max_param_size = max(list(map(len, kwargs.keys())) or [0])
 
     print('  args:')

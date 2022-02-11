@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 from logging import warning
 
@@ -43,23 +44,6 @@ def classification_multilabel_from_segmentation(entry, classes, sizes, keys):
   label = tf.reshape(label, [-1])
   label = tf.unique(label)[0]
   label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
-
-  return image, label
-
-
-def classification_multilabel_from_segmentation_cityscapes(entry, classes, sizes, keys):
-  image, label = (dig(entry, k) for k in keys)
-
-  label = tf.reshape(label, [-1])
-  label = tf.unique(label)[0] - 7
-
-  valid = (label >= 0) & (label < classes)
-  label = label[valid]
-
-  label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
-
-  if sizes is not None:
-    image, _ = adjust_resolution(image, sizes)
 
   return image, label
 
@@ -127,7 +111,6 @@ __all__ = [
   'classification',
   'classification_multilabel_from_detection',
   'classification_multilabel_from_segmentation',
-  'classification_multilabel_from_segmentation_cityscapes',
   'object_detection',
   'get',
 ]
