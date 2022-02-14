@@ -56,9 +56,14 @@ python ...
 
 ### Local
 ```shell
-python src/baseline.py with config/classification.cifar10.yml \
-  model.backbone.architecture=ResNet101V2                     \
-  -F logs/cifar10/baseline/
+SOURCE=src/train_and_finetune.py
+LOGS=./logs/classification/cifar10/train.rn50.noaug
+
+python $SOURCE                                                        \
+  with config/runs/classification/train_and_finetune.yml              \
+  config/runs/classification/mixins/datasets/cifar10.yml              \
+  setup.paths.ckpt=$LOGS/backup                                       \
+  -F $LOGS
 ```
 ### Docker
 
@@ -66,21 +71,34 @@ The simplest way to run an experiment is to start the container and run the pyth
 inside the container, which can be achieved by prepending the previous run command with
 `docker-compose exec notebook`. For example:
 ```shell
-SOURCE=src/baseline.py
-CONFIG=config/classification/cifar10/rn50.baseline.yml
-LOGS=logs/classification/cifar10/rn50.baseline
+source config/docker/.env
 
-docker-compose up -d
-docker-compose exec notebook python $SOURCE with $CONFIG -F $LOGS
+SOURCE=src/train_and_finetune.py
+LOGS=./logs/classification/cifar10/train.rn50.noaug
+
+
+docker-compose exec $SERVICE python $SOURCE                           \
+  with config/runs/classification/train_and_finetune.yml              \
+  setup.paths.ckpt=$LOGS/backup                                       \
+  -F $LOGS
 ```
 
-You can change the parameters of the run by modifying the `CONFIG` file or by appending
-the desired configuration after `with`:
+You can add new mixins to modify components used in the experiment by
+simply appending them to the command:
 
 ```shell
-docker-compose exec notebook python $SOURCE with $CONFIG \
-  dataset.prepare.preprocess_fn=keras.applications.vgg.preprocess_input
-  model.backbone.architecture=VGG16 \
+EXPERIMENT=voc12-noaug
+EXPERIMENT_TAGS="['voc12', 'rn50']"
+
+docker-compose exec $SERVICE python $SOURCE                           \
+  with config/runs/classification/train_and_finetune.yml              \
+  config/runs/classification/mixins/datasets/voc12.yml                \
+  config/runs/mixins/augmentation/randaug.yml                         \
+  config/runs/mixins/logging/wandb.yml                                \
+  setup.paths.ckpt=$LOGS/backup                                       \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
+  setup.wandb.name=$EXPERIMENT                                        \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS
 ```
 
