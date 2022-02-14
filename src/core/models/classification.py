@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 from typing import Any, Dict, List, Optional
 
@@ -24,13 +25,12 @@ from . import backbone as core_backbone
 class DenseKU(Dense):
   """Dense layer with kernel usage regularization.
   """
+  def __init__(self, *args, alpha=1., **kwargs):
+    super().__init__(*args, **kwargs)
+    self.alpha = alpha
+  
   def call(self, inputs):
-    kernel = self.kernel
-    ag = kernel
-    ag = ag - tf.reduce_max(ag, axis=-1, keepdims=True)
-    ag = tf.nn.softmax(ag)
-
-    outputs = tf.matmul(a=inputs, b=ag * kernel)
+    outputs = tf.matmul(a=inputs, b=self.regularized_kernel)
 
     if self.use_bias:
       outputs = tf.nn.bias_add(outputs, self.bias)
@@ -39,6 +39,23 @@ class DenseKU(Dense):
       outputs = self.activation(outputs)
 
     return outputs
+  
+  @property
+  def regularized_kernel(self):
+    kernel = self.kernel
+    ag = kernel
+    ag = ag - tf.reduce_max(ag, axis=-1, keepdims=True)
+    ag = tf.nn.softmax(ag)
+    ag *= self.alpha
+
+    return ag * kernel
+
+  def get_config(self):
+    config = super().get_config()
+    config.update(
+      alpha=self.alpha,
+    )
+    return config
 
 
 def build_head(
@@ -48,20 +65,24 @@ def build_head(
     batch_norm: bool = False,
     dropout_rate: Optional[float] = None,
     layer_class: str = None,
-    kernel_initializer: str = None,
+    kernel_initializer: str = 'glorot_uniform',
     kernel_regularizer: str = None,
+    config: Optional[Dict[str, Any]] = None,
 ):
   y = input_tensor
   
   if batch_norm:
     y = BatchNormalization(name='head/bn')(y)
   
-  y = Dropout(rate=dropout_rate, name='head/drop')(y)
+  if dropout_rate:
+    y = Dropout(rate=dropout_rate, name='head/drop')(y)
+
   y = get(layer_class)(
     units,
     name='head/logits',
     kernel_initializer=kernel_initializer,
-    kernel_regularizer=regularizers.get(kernel_regularizer)
+    kernel_regularizer=regularizers.get(kernel_regularizer),
+    **(config or {}),
   )(y)
   y = Activation(activation, dtype='float32', name='head/predictions')(y)
 

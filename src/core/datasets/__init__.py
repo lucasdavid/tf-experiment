@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
-from . import cityscapes_small, tfds
+from . import augment, cityscapes_small, tfds
 
 __all__ = [
+  'augment',
   'cityscapes_small',
   'tfds',
 ]

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 from typing import List, Tuple
 
@@ -43,6 +44,7 @@ def classification_multiclass(
   predictions = tf.argmax(probabilities, axis=1)
 
   return {
+    'classes': classes,
     **metrics.classification_binary(
       labels,
       tf.one_hot(predictions, depth=len(classes)).numpy()
@@ -63,6 +65,7 @@ def classification_multilabel(
   labels = labels.numpy()
 
   return {
+    'classes': classes,
     **metrics.classification_binary(labels, predictions),
     **metrics.classification_multilabel(labels, probabilities, predictions)
   }
@@ -96,7 +99,8 @@ def explaining(
     pr.numpy())
 
   return {
-    'localization_iou': _loc_iou
+    'classes': classes,
+    'localization_iou': _loc_iou,
   }
 
 

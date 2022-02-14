@@ -2,7 +2,6 @@ version: "2.3"
 services:
   notebook:
     image: ldavid/tf-experiment
-    # user: "${UID}:${GID}"
     runtime: nvidia
     build:
       dockerfile: ./config/docker/Dockerfile

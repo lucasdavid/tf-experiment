@@ -11,26 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 import sys
 from datetime import datetime
-from math import ceil
-from typing import Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import tensorflow as tf
 
-
 # region Data
 
-def normalize(x, reduce_min=True, reduce_max=True):
-  if reduce_min:
-    x -= tf.reduce_min(x, axis=(-3, -2), keepdims=True)
-  if reduce_max:
-    x = tf.math.divide_no_nan(x, tf.reduce_max(x, axis=(-3, -2), keepdims=True))
+def normalize(
+    x: tf.Tensor,
+    reduce_min: bool = True,
+    reduce_max: bool = True,
+    axis: Tuple[int] = (-3, -2)
+):
+  if reduce_min: x -= tf.reduce_min(x, axis=axis, keepdims=True)
+  if reduce_max: x = tf.math.divide_no_nan(x, tf.reduce_max(x, axis=axis, keepdims=True))
 
   return x
 
-def masked(x, maps):
+def masked(
+    x: tf.Tensor,
+    maps: tf.Tensor
+):
   return x * tf.image.resize(maps, x.shape[1:3])
 
 # endregion
@@ -54,59 +59,86 @@ def unfreeze_top_layers(
     idx = int((1 - layers) * len(model.layers))
   else:
     idx = layers
-
-  for ix, l in enumerate(model.layers):
-    l.trainable = (ix > idx
-                   and (not isinstance(l, tf.keras.layers.BatchNormalization)
-                        or not freeze_bn))
+  
+  if idx == 0 and not freeze_bn:
+    model.trainable = True
+  else:
+    for ix, l in enumerate(model.layers):
+      l.trainable = (ix > idx
+                    and (not isinstance(l, tf.keras.layers.BatchNormalization)
+                          or not freeze_bn))
 
   print(f'Unfreezing {1-idx/len(model.layers):.0%} of the model\'s layers '
         f'(layers={layers} freeze_bn={freeze_bn}). Bottom-most is the '
         f'{idx}-nth layer ({model.layers[idx].name}).')
 
 
-def try_to_load_weights(model, weights):
+def try_to_load_weights(model, weights, raise_on_failure: bool = False):
   try:
     model.load_weights(weights)
-  except FileNotFoundError:
+  except (OSError, FileNotFoundError):
+    if raise_on_failure:
+      raise
+
     print(f'Cannot restore weights from "{weights}".')
 
 # endregion
 
 # region Logging
 
-def log_begin(fun_name, *args, **kwargs):
+def log_begin(
+    fun_name: str,
+    *args,
+    with_margins: bool = True,
+    with_arguments: bool = True,
+    **kwargs
+):
   now = datetime.now()
 
-  print(f'[{fun_name} started at {now}]')
+  if with_margins: print('_' * 65)
+  print(fun_name)
+  print(f'  started at: {now}')
 
-  max_param_size = max(list(map(len, kwargs.keys())) or [0])
+  if with_arguments and args and kwargs:
+    max_param_size = max(list(map(len, kwargs.keys())) or [0])
 
-  print('  args:')
-  print('    ' + '\n    '.join(map(str, args)))
+    print('  args:')
+    print('    ' + '\n    '.join(map(str, args)))
 
-  for k, v in kwargs.items():
-    print(f'  {k:<{max_param_size}} = {v}')
-  print()
+    for k, v in kwargs.items():
+      print(f'  {k:<{max_param_size}} = {v}')
+    print()
 
   return now
 
 
-def log_end(fun_name: str, started: datetime = None):
-  now = datetime.now()
-  elapsed = now - started if started else 'unknown'
-  print(f'[{fun_name} ended at {now} ({elapsed} elapsed)]')
+def log_end(
+    fun_name: str,
+    started: datetime = None,
+    with_margins: bool = True):
+  if started:
+    now = datetime.now()
+    elapsed = now - started
+    print(f'{fun_name} ended at {now} ({elapsed} elapsed)')
+  if with_margins: print('_' * 65)
 
 
-def logged(fn):
-  def _log_wrapper(*args, **kwargs):
-    started = log_begin(fn.__name__, *args, **kwargs)
-    r = fn(*args, **kwargs)
-    log_end(fn.__name__, started)
+def logged(name=None, with_margins=True, with_arguments=True):
+  def decorator(fn):
+    def _log_wrapper(*args, **kwargs):
+      started = log_begin(
+        name or fn.__name__,
+        *args,
+        with_margins=with_margins,
+        with_arguments=with_arguments,
+        **kwargs
+      )
+      r = fn(*args, **kwargs)
+      log_end(fn.__name__, started)
 
-    return r
-
-  return _log_wrapper
+      return r
+    return _log_wrapper
+  return decorator
 
 
 def get_preprocess_fn(preprocess_fn):
@@ -123,16 +155,26 @@ def get_preprocess_fn(preprocess_fn):
 
 # region Generics
 
-def dig(o, prop):
+def dig(
+    o: Optional[Dict],
+    prop: Union[str, List[str]],
+    default: Any = None, 
+    required: bool = False):
+  if not o:
+    if required:
+      raise TypeError(f'Cannot dig key {prop} from None.')
+
+    return default
+
   if isinstance(prop, str):
     prop = prop.split('.')
   
   for p in prop:
-    if p in o:
+    if p in o or required:
       o = o[p]
     else:
-      return None
-  
+      return default
+
   return o
 
 
@@ -142,66 +184,5 @@ def to_list(x):
 
 def unpack(x):
   return x[0] if isinstance(x, (list, tuple)) and len(x) == 1 else x
-
-# endregion
-
-# region Sacred
-
-def get_run_params(_run):
-  report_dir = None
-
-  if _run.observers:
-    for o in _run.observers:
-      if hasattr(o, 'dir'):
-        report_dir = o.dir
-        break
-
-  return {'report_dir': report_dir}
-
-# endregion
-
-# region Visualizations
-
-def visualize(image,
-              title=None,
-              rows=2,
-              cols=None,
-              figsize=(16, 7.2),
-              cmap=None,
-              to_file=None):
-  import matplotlib.pyplot as plt
-  import seaborn as sns
-
-  sns.set_style("whitegrid", {'axes.grid': False})
-
-  if image is not None:
-    if isinstance(image, (list, tuple)) or len(image.shape) > 3:  # many images
-      plt.figure(figsize=figsize)
-      cols = cols or ceil(len(image) / rows)
-      for ix in range(len(image)):
-        plt.subplot(rows, cols, ix + 1)
-        visualize(
-            image[ix],
-            cmap=cmap,
-            title=title[ix] if title is not None and len(title) > ix else None)
-      
-      plt.tight_layout()
-      plt.subplots_adjust(wspace=0, hspace=0)
-
-      if to_file is not None:
-        print('saving graphics to', to_file)
-        plt.savefig(to_file)
-
-      return
-
-    if isinstance(image, tf.Tensor):
-      image = image.numpy()
-    if image.shape[-1] == 1:
-      image = image[..., 0]
-    plt.imshow(image, cmap=cmap)
-
-  if title is not None:
-    plt.title(title)
-  plt.axis('off')
 
 # endregion

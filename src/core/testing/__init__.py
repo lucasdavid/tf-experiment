@@ -11,29 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 
 import pandas as pd
 import tensorflow as tf
 
 from ..inference import target_and_output
-from . import tasks, explanations
+from . import explanations, tasks
 
 
 def evaluate(
     model: tf.keras.Model,
     dataset: tf.data.Dataset,
+    classes: List[str],
     task: Union[str, Callable],
-    classes: List[str] = None,
 ):
   print('-' * 32)
   print(f'Evaluation {str(task)}')
 
-  try:
-    return report(target_and_output(model, dataset), task, classes)
-  except KeyboardInterrupt:
-    print('\ninterrupted')
+  outputs = target_and_output(model, dataset)
+  evaluations = report(outputs, task, classes)
+
+  return evaluations
 
 
 def report(
@@ -47,6 +48,18 @@ def report(
  
   print('-' * 32)
   print(str(task).replace('_', ' ').capitalize(), 'Report')
-  print(evaluations.round(4))
+  with pd.option_context(
+      'display.max_rows', None,
+      'display.max_columns', None
+  ):
+    print(evaluations.round(4))
 
   return evaluations
+
+
+__all__ = [
+  'explanations',
+  'evaluate',
+  'report',
+  'tasks',
+]

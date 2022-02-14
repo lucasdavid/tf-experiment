@@ -1,16 +1,17 @@
 {
   "files.watcherExclude": {
-    "data**": true,
-    "data/**": true,
-    "logs**": true,
-    "logs/**": true
+    "**/data/**": true,
+    "**/logs/**": true,
+    "**/build/**": true
   },
   "spellright.language": [
     "en_US"
   ],
-  "spellright.documentTypes": [
-    "markdown",
-    "latex",
-    "plaintext"
-  ]
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  // "editor.formatOnSave": true,
+  // "[python]": {
+  //   "editor.defaultFormatter": "ms-python.python",
+  //   "editor.formatOnSave": true
+  // },
 }

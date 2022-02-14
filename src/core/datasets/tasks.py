@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
+
+from logging import warning
 
 from logging import warning
 
@@ -30,6 +33,7 @@ def classification(entry, classes, sizes, keys):
   return tf.cast(image, tf.float32), label
 
 
+
 def classification_multilabel_from_detection(entry, classes, sizes, keys):
   image, label = classification(entry, classes, sizes, keys)
   label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
@@ -47,21 +51,17 @@ def classification_multilabel_from_segmentation(entry, classes, sizes, keys):
   return image, label
 
 
-def classification_multilabel_from_segmentation_cityscapes(entry, classes, sizes, keys):
-  image, label = (dig(entry, k) for k in keys)
-
-  label = tf.reshape(label, [-1])
-  label = tf.unique(label)[0] - 7
-
-  valid = (label >= 0) & (label < classes)
-  label = label[valid]
-
-  label = tf.reduce_max(tf.one_hot(label, depth=classes), axis=0)
+def object_detection(entry, classes, sizes, keys):
+  if not any('objects' in k for k in keys):
+    warning(f'An object detection task is running, but "objects" is not in '
+            f'keys={keys}. Make sure you are selecting the correct labels.')
+  
+  image, bboxes, label = (dig(entry, k) for k in keys)
 
   if sizes is not None:
     image, _ = adjust_resolution(image, sizes)
-
-  return image, label
+  
+  return image, bboxes, label
 
 
 def object_detection(entry, classes, sizes, keys):
@@ -78,6 +78,15 @@ def object_detection(entry, classes, sizes, keys):
 
 
 def adjust_resolution(image, sizes):
+  """Adjust input image sizes to be within the expected `sizes`.
+
+  Example:
+    shape = (512, 1024, 3)
+    sizes = (512, 512)
+    =>
+    out shape = (256, 512, 3)
+
+  """
   es = tf.constant(sizes, tf.float32)
   xs = tf.cast(tf.shape(image)[:2], tf.float32)
 
@@ -118,7 +127,6 @@ __all__ = [
   'classification',
   'classification_multilabel_from_detection',
   'classification_multilabel_from_segmentation',
-  'classification_multilabel_from_segmentation_cityscapes',
   'object_detection',
   'get',
 ]

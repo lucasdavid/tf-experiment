@@ -11,18 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 import os
 import shutil
-from typing import List
+import sys
 
 import tensorflow as tf
 
 from .callbacks import get as cb_deserialize
-from .utils import unfreeze_top_layers, try_to_load_weights, dig
+from .utils import dig, log_begin, try_to_load_weights, unfreeze_top_layers
 
 
-def train_or_restore(
+def train_head_and_finetune(
     nn,
     backbone,
     train,
@@ -30,6 +31,7 @@ def train_or_restore(
     run_params,
     perform,
     loss,
+    scale_loss,
     optimizer,
     metrics,
     config,
@@ -38,12 +40,14 @@ def train_or_restore(
     paths,
     distributed,
 ):
-  print('-' * 32)
-  print('Training Classification Head')
+  log_begin('Training Classification Head')
 
   with distributed.scope():
     loss = tf.losses.get(loss)
     optimizer = tf.optimizers.get(dict(optimizer))
+    if scale_loss:
+      optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
+
     metrics = [tf.metrics.get(m) for m in metrics]
 
     nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
@@ -62,6 +66,10 @@ def train_or_restore(
       print('\ninterrupted')
     else:
       print('\ndone')
+      
+      if os.path.exists(paths['ckpt']):
+        print(f'Cleaning dangling backup folder {paths["ckpt"]}')
+        shutil.rmtree(paths['ckpt'], ignore_errors=True)
 
     histories += nn.history.history
   else:
@@ -69,8 +77,7 @@ def train_or_restore(
           f'previously trained model from "{paths["best"]}"')
 
   if dig(finetune, 'perform'):
-    print('-' * 32)
-    print('Fine-Tuning Entire Network')
+    log_begin('Fine-Tuning Entire Network')
 
     with distributed.scope():
       try_to_load_weights(nn, paths['best'])
@@ -79,6 +86,9 @@ def train_or_restore(
 
     with distributed.scope():
       optimizer = tf.optimizers.get(dict(finetune['optimizer']))
+      if scale_loss:
+        optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
+
       nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
     try:
@@ -88,6 +98,9 @@ def train_or_restore(
           callbacks=cb_deserialize(finetune['callbacks'], run_params),
           **finetune['config']
       )
+    except FileNotFoundError as error:
+      print(error, file=sys.stderr)
+
     except KeyboardInterrupt:
       print('\ninterrupted')
     else:
@@ -99,14 +112,14 @@ def train_or_restore(
 
   with distributed.scope():
     try_to_load_weights(nn, paths['best'])
-  
+
   nn.save(paths['export'], save_format='tf')
 
   try:
     if os.path.isfile(paths['best']):
       os.remove(paths['best'])
     else:
-      shutil.rmtree(paths['best'])
+      shutil.rmtree(paths['best'], ignore_errors=True)
   except FileNotFoundError:
     ...
 
@@ -114,5 +127,5 @@ def train_or_restore(
 
 
 __all__ = [
-    'train_or_restore',
+    'train_head_and_finetune',
 ]

@@ -11,14 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ==============================================================================
 
 import tensorflow as tf
+import wandb.keras
 
 
 def get(identifier, override=None):
-  if isinstance(identifier, tf.keras.callbacks.Callback):
+  if identifier is None or isinstance(identifier, tf.keras.callbacks.Callback):
     return identifier
-  elif isinstance(identifier, tuple):
+
+  if isinstance(identifier, tuple):
     cls, config = identifier
   elif isinstance(identifier, str):
     cls, config = identifier, {}
@@ -40,6 +43,7 @@ def get(identifier, override=None):
   cls = (
       getattr(tf.keras.callbacks, cls, None)
       or getattr(tf.keras.callbacks.experimental, cls, None)
+      or getattr(wandb.keras, cls, None)
   )
 
   return cls(**(config or {}))

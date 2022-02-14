@@ -104,3 +104,5 @@ cython_debug/
 /models/
 data
 logs
+
+.secrets
