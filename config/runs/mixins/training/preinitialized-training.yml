@@ -10,3 +10,5 @@ training:
     config:
       epochs: 100
       initial_epoch: *epochs
+    unfreeze:
+      freeze_bn: false

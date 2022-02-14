@@ -3,4 +3,4 @@ dataset:
     preprocess_fn: null
 model:
   backbone:
-    architecture: EfficientNetB0
+    architecture: EfficientNetB6

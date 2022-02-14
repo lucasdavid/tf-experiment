@@ -116,10 +116,7 @@ def run(setup, dataset, model, training, evaluation, _log, _run):
   weights = getattr(layer, 'regularized_kernel', layer.kernel)
 
   (ex.log_evaluations(evaluations)
-     .log_weights(
-       classes,
-       weights,
-     )
+     .log_weights(classes, weights)
      .finish())
 
 

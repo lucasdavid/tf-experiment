@@ -1,0 +1,10 @@
+model:
+  backbone:
+    weights: null
+    training: true
+training:
+  perform: true
+  config:
+    epochs: &epochs 100
+  finetune:
+    perform: false

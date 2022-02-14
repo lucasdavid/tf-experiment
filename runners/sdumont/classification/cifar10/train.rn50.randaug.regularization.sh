@@ -26,7 +26,7 @@
 #   - None (baseline)
 #   - L1L2 (weak)
 #   - Orthogonal (strong)
-#   - Kernel Usage (massive)
+#   - Kernel Usage (ours, strong)
 #
 # Make sure the run-specific parameters are added:
 #
@@ -63,7 +63,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -82,7 +82,7 @@ CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/regularizers/dropout.yml          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -101,7 +101,7 @@ CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/regularizers/l1l2.yml             \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -120,7 +120,7 @@ CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/regularizers/orthogonal.yml       \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -139,7 +139,7 @@ CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/regularizers/kernel-usage.yml     \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \

@@ -51,7 +51,7 @@ docker-compose exec $SERVICE python $SOURCE                           \
   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS

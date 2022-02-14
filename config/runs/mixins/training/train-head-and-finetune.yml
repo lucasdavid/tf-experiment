@@ -11,7 +11,7 @@ training:
       epochs: 100
       initial_epoch: *epochs
     unfreeze:
-      freeze_bn: false
+      freeze_bn: true
     optimizer:
       config:
-        learning_rate: 0.001
+        learning_rate: 0.001  # assumes 0.001 is small for the optimizer (SGD)

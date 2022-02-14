@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH -p sequana_gpu_shared
-#SBATCH -J lerdl-ss-train.rn50.all
+#SBATCH -J lerdl-ss-cifar100-train.rn50.all
 #SBATCH -o /scratch/lerdl/lucas.david/logs/cifar100.train.rn50.all.%j.out
 #SBATCH --time=96:00:00
 
@@ -32,7 +32,7 @@
 #   - None (baseline)
 #   - L1L2 (weak)
 #   - Orthogonal (strong)
-#   - Kernel Usage (massive)
+#   - Kernel Usage (ours, strong)
 #
 # Make sure the run-specific parameters are added:
 #
@@ -67,7 +67,7 @@ EXPERIMENT=noaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'noaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/none.yml                            \
@@ -77,7 +77,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/noaug                                 \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -88,7 +88,7 @@ EXPERIMENT=finetune-noaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'noaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/none.yml                            \
@@ -98,7 +98,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/noaug                                 \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -110,7 +110,7 @@ EXPERIMENT=simpleaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'simpleaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/simple.yml                          \
@@ -120,7 +120,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/simpleaug                             \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -131,7 +131,7 @@ EXPERIMENT=finetune-simpleaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'simpleaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/simple.yml                          \
@@ -141,7 +141,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/simpleaug                             \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -153,7 +153,7 @@ EXPERIMENT=randaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -163,7 +163,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/randaug                               \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -174,7 +174,7 @@ EXPERIMENT=finetune-randaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -184,7 +184,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/randaug                               \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -200,7 +200,7 @@ EXPERIMENT=randaug-dropout
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'dropout']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -211,7 +211,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/dropout                               \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -222,7 +222,7 @@ EXPERIMENT=randaug-dropout
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'dropout']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -233,7 +233,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/dropout                               \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -245,7 +245,7 @@ EXPERIMENT=randaug-l1l2
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'l1l2']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -256,7 +256,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/l1l2                                  \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -267,7 +267,7 @@ EXPERIMENT=randaug-l1l2
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'l1l2']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -278,7 +278,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/l1l2                                  \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -290,7 +290,7 @@ EXPERIMENT=randaug-ortho
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'ortho']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -301,7 +301,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/ortho                                 \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -312,7 +312,7 @@ EXPERIMENT=randaug-ortho
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'ortho']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
   config/runs/classification/train_and_finetune.yml                   \
   config/runs/classification/mixins/datasets/cifar100.yml             \
   config/runs/mixins/augmentation/randaug.yml                         \
@@ -323,7 +323,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/ortho                                 \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -346,7 +346,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/kernel-usage                          \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -368,7 +368,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/mixins/environment/sdumont.yml                          \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup/kernel-usage                          \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \

@@ -4,3 +4,7 @@ dataset:
 model:
   backbone:
     architecture: ResNet101V2
+training:
+  finetune:
+    unfreeze:
+      layers: conv4_block10_out

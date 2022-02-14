@@ -24,7 +24,7 @@ dataset:
       kind: not_empty
     shuffle:
       seed: 1272
-      buffer_size: 10000
+      buffer_size: 8000
       splits:
         - train
     augmentation:

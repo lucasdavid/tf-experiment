@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #SBATCH -p sequana_gpu_shared
-#SBATCH -J lerdl-ss-train.rn50.agumentation
+#SBATCH -J lerdl-ss-cifar10-train.rn50.agumentation
 #SBATCH -o /scratch/lerdl/lucas.david/logs/cifar10.train.rn50.agumentation.%j.out
 #SBATCH --time=96:00:00
 
@@ -61,7 +61,7 @@ CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -78,7 +78,7 @@ CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
@@ -95,7 +95,7 @@ CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
   config/runs/mixins/logging/wandb.yml                                \
   setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR/wandb                               \
+  setup.paths.wandb_dir=$LOGS_DIR                                     \
   setup.wandb.name=$EXPERIMENT                                        \
   setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
   -F $LOGS                                                            \
