@@ -1,0 +1,17 @@
+model:
+  backbone:
+    weights: imagenet
+training:
+  perform: true
+  config:
+    epochs: &epochs 30
+  finetune:
+    perform: true
+    config:
+      epochs: 100
+      initial_epoch: *epochs
+    unfreeze:
+      freeze_bn: false
+    optimizer:
+      config:
+        learning_rate: 0.001

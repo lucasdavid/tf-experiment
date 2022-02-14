@@ -2,13 +2,13 @@ training:
   optimizer:
     class_name: sgd
     config:
-      learning_rate: 0.1
+      learning_rate: 0.01
       momentum: 0.9
       nesterov: true
   finetune:
     optimizer:
       class_name: sgd
       config:
-        learning_rate: 0.001
+        learning_rate: 0.01
         momentum: 0.9
         nesterov: true

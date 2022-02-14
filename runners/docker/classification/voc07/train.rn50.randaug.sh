@@ -64,6 +64,9 @@ docker-compose exec $SERVICE python $SOURCE                           \
 #   config/runs/classification/mixins/datasets/voc07.yml                \
 #   config/runs/classification/mixins/datasets/voc12.yml                \
 #
+#   config/runs/mixins/training/preinitialized-training.yml             \
+#   config/runs/mixins/training/train-head-and-finetune.yml             \
+#
 #   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
 #
 #   config/runs/classification/mixins/regularizers/dropout.yml          \

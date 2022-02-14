@@ -85,9 +85,15 @@ class Experiment:
       evaluations.to_csv(path, index=False)
 
     if self.wandb_run:
+      print(f'Saving evaluation at wandb.ai')
       self.wandb_run.log({
         'evaluations': wandb_lib.Table(dataframe=evaluations)
       })
+
+      em = evaluations.mean(axis=0)
+
+      for key, value in zip(em.index, em.values):
+        self.wandb_run.summary[f'evaluations/test/{key}'] = value
   
     return self
 

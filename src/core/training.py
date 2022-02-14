@@ -46,7 +46,7 @@ def train_head_and_finetune(
     loss = tf.losses.get(loss)
     optimizer = tf.optimizers.get(dict(optimizer))
     if scale_loss:
-      optimizer = tf.mixed_precision.LossScaleOptimizer(optimizer)
+      optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
 
     metrics = [tf.metrics.get(m) for m in metrics]
 
@@ -87,7 +87,7 @@ def train_head_and_finetune(
     with distributed.scope():
       optimizer = tf.optimizers.get(dict(finetune['optimizer']))
       if scale_loss:
-        optimizer = tf.mixed_precision.LossScaleOptimizer(optimizer)
+        optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
 
       nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
 
