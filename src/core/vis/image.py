@@ -45,7 +45,9 @@ def visualize(
     cols=None,
     figsize=(16, 7.2),
     cmap=None,
-    to_file=None
+    to_file=None,
+    subplots_ws=0.,
+    subplots_hs=0.,
 ):
   import matplotlib.pyplot as plt
   import seaborn as sns
@@ -54,8 +56,12 @@ def visualize(
 
   if image is not None:
     if isinstance(image, (list, tuple)) or len(image.shape) > 3:  # many images
+      if isinstance(image, tf.Tensor):
+        image = image.numpy()
+    
       plt.figure(figsize=figsize)
       cols = cols or ceil(len(image) / rows)
+
       for ix in range(len(image)):
         plt.subplot(rows, cols, ix + 1)
         visualize(
@@ -64,20 +70,19 @@ def visualize(
             title=title[ix] if title is not None and len(title) > ix else None)
       
       plt.tight_layout()
-      plt.subplots_adjust(wspace=0, hspace=0)
+      plt.subplots_adjust(wspace=subplots_ws, hspace=subplots_hs)
 
       if to_file is not None:
-        print('  saving graphics to', to_file)
         plt.savefig(to_file)
 
       return
 
-    if isinstance(image, tf.Tensor):
-      image = image.numpy()
     if image.shape[-1] == 1:
       image = image[..., 0]
+    
     plt.imshow(image, cmap=cmap)
 
   if title is not None:
     plt.title(title)
+
   plt.axis('off')

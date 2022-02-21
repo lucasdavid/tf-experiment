@@ -20,7 +20,7 @@ import sys
 import tensorflow as tf
 
 from .callbacks import get as cb_deserialize
-from .utils import dig, log_begin, try_to_load_weights, unfreeze_top_layers
+from .utils import dig, log_begin, logged, try_to_load_weights, unfreeze_top_layers
 
 
 def train_head_and_finetune(
@@ -42,15 +42,7 @@ def train_head_and_finetune(
 ):
   log_begin('Training Classification Head')
 
-  with distributed.scope():
-    loss = tf.losses.get(loss)
-    optimizer = tf.optimizers.get(dict(optimizer))
-    if scale_loss:
-      optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
-
-    metrics = [tf.metrics.get(m) for m in metrics]
-
-    nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+  _, loss, metrics = compile_distributed(nn, loss, scale_loss, optimizer, metrics, distributed)
 
   histories = []
 
@@ -66,7 +58,7 @@ def train_head_and_finetune(
       print('\ninterrupted')
     else:
       print('\ndone')
-      
+
       if os.path.exists(paths['ckpt']):
         print(f'Cleaning dangling backup folder {paths["ckpt"]}')
         shutil.rmtree(paths['ckpt'], ignore_errors=True)
@@ -83,13 +75,7 @@ def train_head_and_finetune(
       try_to_load_weights(nn, paths['best'])
 
     unfreeze_top_layers(backbone, **finetune['unfreeze'])
-
-    with distributed.scope():
-      optimizer = tf.optimizers.get(dict(finetune['optimizer']))
-      if scale_loss:
-        optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
-
-      nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+    compile_distributed(nn, loss, scale_loss, finetune['optimizer'], metrics, distributed)
 
     try:
       nn.fit(
@@ -126,6 +112,29 @@ def train_head_and_finetune(
   return nn, histories
 
 
+@logged('Distributed Model Compilation', heading=3)
+def compile_distributed(
+    nn,
+    loss,
+    scale_loss,
+    optimizer,
+    metrics,
+    distributed,
+):
+  with distributed.scope():
+    loss = tf.losses.get(loss)
+    
+    optimizer = tf.optimizers.get(dict(optimizer))
+    if scale_loss:
+      optimizer = tf.keras.mixed_precision.LossScaleOptimizer(optimizer)
+
+    metrics = [tf.metrics.get(m) for m in metrics]
+    nn.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+  
+  return optimizer, loss, metrics
+
+
 __all__ = [
-    'train_head_and_finetune',
+  'train_head_and_finetune',
+  'compile_distributed',
 ]

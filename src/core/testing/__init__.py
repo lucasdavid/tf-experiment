@@ -13,52 +13,57 @@
 # limitations under the License.
 # ==============================================================================
 
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import pandas as pd
 import tensorflow as tf
 
 from ..inference import target_and_output
-from . import explanations, tasks
+from ..utils import logged
+from . import tasks
 
 
+@logged('Evaluation')
 def evaluate(
     model: tf.keras.Model,
     dataset: tf.data.Dataset,
     classes: List[str],
     task: Union[str, Callable],
+    kind: str = 'offline',
+    config: Optional[Dict[str, Any]] = None,
 ):
-  print('-' * 32)
-  print(f'Evaluation {str(task)}')
+  inputs = (target_and_output(model, dataset)
+            if kind == 'offline'
+            else (model, dataset))
 
-  outputs = target_and_output(model, dataset)
-  evaluations = report(outputs, task, classes)
-
-  return evaluations
+  return report(task, inputs, config, classes)
 
 
 def report(
-    target_and_output,
     task: Union[str, Callable],
+    inputs: Optional[List[Any]],
+    config: Optional[Dict[str, Any]],
     classes: List[str] = None,
+    verbose: int = 1,
 ):
-  task_fn = tasks.get(task)
-  evaluations = task_fn(target_and_output, classes=classes)
-  evaluations = pd.DataFrame(evaluations)
- 
-  print('-' * 32)
-  print(str(task).replace('_', ' ').capitalize(), 'Report')
-  with pd.option_context(
-      'display.max_rows', None,
-      'display.max_columns', None
-  ):
-    print(evaluations.round(4))
+  evaluations = tasks.get(task)(inputs, classes=classes, **(config or {}))
+  evaluations = pd.DataFrame(evaluations).set_index('classes')
+
+  scores = evaluations.select_dtypes('number')
+  support = evaluations.support.values.reshape(-1, 1)
+
+  evaluations.loc['avg_macro'] = scores.mean(axis=0)
+  evaluations.loc['avg_weighted'] = (scores*support/support.sum()).sum(axis=0)
+
+  if verbose:
+    print('### Task Report', end='\n\n')
+    print(evaluations.round(5).to_markdown())
+    print()
 
   return evaluations
 
 
 __all__ = [
-  'explanations',
   'evaluate',
   'report',
   'tasks',

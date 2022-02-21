@@ -1,0 +1,47 @@
+setup:
+  tf_seed: 421
+  gpus_with_memory_growth: true
+  paths:
+    ckpt: "./models/checkpoint/"
+    export: "./models/saved_model"
+dataset:
+  prepare:
+    sizes: &image_sizes [32, 32, 3]
+    classes: &classes 10
+model:
+  name: mc_cifar10
+  input_shape: *image_sizes
+  head:
+    units: *classes
+    activation: softmax
+    dropout_rate: 0
+    batch_norm: false
+    kernel_regularizer: null
+    kernel_initializer: glorot_uniform
+    layer_class: dense
+  backbone:
+    architecture: ResNet50V2
+    trainable: false
+    config:
+      weights: imagenet
+      pooling: avg
+training:
+  perform: true
+  loss: SparseCategoricalCrossentropy
+  scale_loss: false
+  optimizer:
+    class_name: adam
+    config:
+      learning_rate: 0.001
+  metrics:
+    - SparseCategoricalAccuracy
+    - SparseTopKCategoricalAccuracy
+  finetune:
+    perform: true
+    unfreeze:
+      layers: conv5_block1_1_conv
+      freeze_bn: true
+    optimizer:
+      class_name: adam
+      config:
+        learning_rate: 0.001

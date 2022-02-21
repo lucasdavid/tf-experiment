@@ -1,0 +1,6 @@
+setup:
+  wandb:
+    project: salient-segmentation-dev
+    name: rn50
+    job_type: cam-benchmark
+    entity: ldavid

@@ -31,6 +31,7 @@ def load(name, data_dir, splits=('train', 'test')):
   parts, info = tfds.load(
       name, split=splits, with_info=True, shuffle_files=True, data_dir=data_dir
   )
+
   return splits, parts, info
 
 

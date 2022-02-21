@@ -1,3 +1,6 @@
+from sacred.run import Run
+
+
 def get_run_params(_run):
   report_dir = None
 
@@ -8,3 +11,9 @@ def get_run_params(_run):
         break
 
   return {'report_dir': report_dir}
+
+
+__all__ = [
+  'Run',
+  'get_run_params',
+]

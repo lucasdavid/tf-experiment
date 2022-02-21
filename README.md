@@ -1,6 +1,6 @@
-# Tensorflow Experiment
+# Salient Segmentation
 
-A basic benchmark for tensorflow experiments.
+Tensorflow implementation of attention-and-saliency-based-segmentation.
 
 ## Setup
 You can use this project in multiple distinct environments.
@@ -56,30 +56,31 @@ python ...
 
 ### Local
 ```shell
-SOURCE=src/train_and_finetune.py
+SOURCE=experiments/train_and_finetune.py
 LOGS=./logs/classification/cifar10/train.rn50.noaug
 
 python $SOURCE                                                        \
-  with config/runs/classification/train_and_finetune.yml              \
-  config/runs/classification/mixins/datasets/cifar10.yml              \
-  setup.paths.ckpt=$LOGS/backup                                       \
+  config/classification/train_and_finetune.yml            \
+  config/classification/datasets/cifar10.yml              \
+  setup.paths.ckpt=$LOGS/backup                           \
   -F $LOGS
 ```
 ### Docker
 
 The simplest way to run an experiment is to start the container and run the python interpreter
 inside the container, which can be achieved by prepending the previous run command with
-`docker-compose exec notebook`. For example:
+`docker-compose exec tf-experiment`. For example:
 ```shell
 source config/docker/.env
 
-SOURCE=src/train_and_finetune.py
+SOURCE=experiments/train_and_finetune.py
 LOGS=./logs/classification/cifar10/train.rn50.noaug
 
 
-docker-compose exec $SERVICE python $SOURCE                           \
-  with config/runs/classification/train_and_finetune.yml              \
-  setup.paths.ckpt=$LOGS/backup                                       \
+docker-compose exec $SERVICE                              \
+  python -X pycache_prefix=$PYTHONPYCACHEPREFIX $SOURCE with  \
+  config/classification/train_and_finetune.yml            \
+  setup.paths.ckpt=$LOGS/backup                           \
   -F $LOGS
 ```
 
@@ -90,15 +91,16 @@ simply appending them to the command:
 EXPERIMENT=voc12-noaug
 EXPERIMENT_TAGS="['voc12', 'rn50']"
 
-docker-compose exec $SERVICE python $SOURCE                           \
-  with config/runs/classification/train_and_finetune.yml              \
-  config/runs/classification/mixins/datasets/voc12.yml                \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/mixins/logging/wandb.yml                                \
-  setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
+docker-compose exec $SERVICE                              \
+  python -X pycache_prefix=$PYTHONPYCACHEPREFIX $SOURCE with  \
+  config/classification/train_and_finetune.yml            \
+  config/classification/datasets/voc12.yml                \
+  config/augmentation/randaug.yml                         \
+  config/logging/wandb.train.yml                          \
+  setup.paths.ckpt=$LOGS/backup                           \
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
   -F $LOGS
 ```
 

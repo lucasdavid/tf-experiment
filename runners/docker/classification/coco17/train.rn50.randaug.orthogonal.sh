@@ -39,51 +39,52 @@ source config/docker/.env
 EXPERIMENT=rn50-randaug
 EXPERIMENT_TAGS="['coco17', 'rn50', 'momentum', 'randaug']"
 
-SOURCE=src/train_and_finetune.py
+SOURCE=experiments/train_and_finetune.py
 LOGS=./logs/classification/coco17/train.rn50.randaug
 
 
-docker-compose exec $SERVICE python $SOURCE                           \
-  with config/runs/classification/train_and_finetune.yml              \
-  config/runs/classification/mixins/datasets/coco17.yml               \
-  config/runs/classification/mixins/regularizers/orthogonal.yml       \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/logging/wandb.yml                                \
-  setup.paths.ckpt=$LOGS/backup                                       \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
+docker-compose exec $SERVICE                              \
+  python -X pycache_prefix=$PYTHONPYCACHEPREFIX $SOURCE with  \
+  config/classification/train_and_finetune.yml            \
+  config/classification/datasets/coco17.yml               \
+  config/classification/regularizers/orthogonal.yml       \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/logging/wandb.train.yml                          \
+  setup.paths.ckpt=$LOGS/backup                           \
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
   -F $LOGS
 
 
 #   All Mixins Available:
 #
-#   config/runs/classification/mixins/datasets/cifar10.yml              \
-#   config/runs/classification/mixins/datasets/cityscapes.yml           \
-#   config/runs/classification/mixins/datasets/coco17.yml               \
-#   config/runs/classification/mixins/datasets/voc07.yml                \
-#   config/runs/classification/mixins/datasets/voc12.yml                \
+#   config/classification/datasets/cifar10.yml              \
+#   config/classification/datasets/cityscapes.yml           \
+#   config/classification/datasets/coco17.yml               \
+#   config/classification/datasets/voc07.yml                \
+#   config/classification/datasets/voc12.yml                \
 #
-#   config/runs/mixins/training/preinitialized-training.yml             \
-#   config/runs/mixins/training/train-head-and-finetune.yml             \
+#   config/training/preinitialized-training.yml             \
+#   config/training/train-head-and-finetune.yml             \
 #
-#   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
+#   config/classification/optimizers/momentum_nesterov.yml  \
 #
-#   config/runs/classification/mixins/regularizers/dropout.yml          \
-#   config/runs/classification/mixins/regularizers/kernel-usage.yml     \
-#   config/runs/classification/mixins/regularizers/orthogonal.yml       \
-#   config/runs/classification/mixins/regularizers/l1l2.yml             \
+#   config/classification/regularizers/dropout.yml          \
+#   config/classification/regularizers/kernel-usage.yml     \
+#   config/classification/regularizers/orthogonal.yml       \
+#   config/classification/regularizers/l1l2.yml             \
 #
-#   config/runs/mixins/augmentation/none.yml                            \
-#   config/runs/mixins/augmentation/simple.yml                          \
-#   config/runs/mixins/augmentation/randaug.yml                         \
+#   config/augmentation/none.yml                            \
+#   config/augmentation/simple.yml                          \
+#   config/augmentation/randaug.yml                         \
 #
-#   config/runs/mixins/environment/precision-mixed-float16.yml          \
-#   config/runs/mixins/environment/dev.yml                              \
-#   config/runs/mixins/logging/wandb.yml                                \
+#   config/environment/precision-mixed-float16.yml          \
+#   config/environment/dev.yml                              \
+#   config/logging/wandb.train.yml                          \
 #
-#   config/runs/mixins/models/enb0.yml                                  \
-#   config/runs/mixins/models/enb6.yml                                  \
-#   config/runs/mixins/models/rn50.yml                                  \
-#   config/runs/mixins/models/rn101.yml                                 \
+#   config/models/enb0.yml                                  \
+#   config/models/enb6.yml                                  \
+#   config/models/rn50.yml                                  \
+#   config/models/rn101.yml                                 \

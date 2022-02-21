@@ -1,8 +1,8 @@
 version: "2.3"
 services:
-  notebook:
+  tf-experiment:
     image: ldavid/tf-experiment
-    runtime: nvidia
+    # runtime: nvidia  # when GPUs are available
     build:
       dockerfile: ./config/docker/Dockerfile
       context: .
@@ -11,12 +11,12 @@ services:
     ports:
       - "8888:8888"
       - "6006:6006"
-    env_file:
-      - ./config/docker/.env
+    env_file: ./config/docker/.env
     volumes:
       - ./notebooks:/tf/notebooks
       - ./config:/tf/config
       - ./logs:/tf/logs
       - ./src:/tf/src
+      - ./experiments:/tf/experiments
       - ./data:/tf/data
       - ./data/cached/.cache:/root/.cache

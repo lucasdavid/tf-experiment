@@ -1,0 +1,87 @@
+setup:
+  tf_seed: 7129
+  gpus_with_memory_growth: true
+  paths:
+    data: &paths_data "./data"
+    export: "{report_dir}/saved_model"
+    evaluation_report: "{report_dir}/evaluation.csv"
+    weights_report: "{report_dir}/weights.csv"
+    samples_dir: "{report_dir}/samples"
+    wandb_dir: "./logs/wandb"
+dataset:
+  load:
+    name: cifar10
+    data_dir: *paths_data
+    splits:
+      - train[:80%]
+      - train[80%:]
+      - test
+  prepare:
+    take: null
+    batch_size: 64
+    sizes: &image_sizes [32, 32, 3]
+    prefetch_buffer_size: auto
+    parallel_calls: auto
+    drop_remainder: false
+    task: classification
+    classes: &classes 10
+    keys:
+      - image
+      - label
+    augmentation:
+      splits:
+        - train[:80%]
+        # - train[80%:]
+        # - test
+      policy:
+        class_name: Default
+        config: {}
+      over: batches
+    preprocess_fn: null
+model:
+  name: mc_cifar10
+  input_shape: *image_sizes
+  head:
+    units: *classes
+    activation: softmax
+    dropout_rate: 0
+    batch_norm: false
+    kernel_regularizer: null
+    kernel_initializer: glorot_uniform
+    layer_class: dense
+  backbone:
+    architecture: ResNet50V2
+    trainable: false
+    config:
+      weights: imagenet
+      pooling: avg
+training:
+  perform: false
+  loss: SparseCategoricalCrossentropy
+  scale_loss: false
+  optimizer:
+    class_name: adam
+    config:
+      learning_rate: 0.001
+  metrics:
+    - SparseCategoricalAccuracy
+    - SparseTopKCategoricalAccuracy
+  config:
+    epochs: &epochs 0
+    verbose: 2
+  finetune:
+    perform: false
+    unfreeze:
+      layers: conv5_block1_1_conv
+      freeze_bn: true
+    optimizer:
+      class_name: adam
+      config:
+        learning_rate: 0.001
+    config:
+      epochs: 100
+      initial_epoch: *epochs
+      verbose: 2
+evaluation:
+  task: sparse_classification_multiclass
+  kind: offline

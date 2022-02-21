@@ -19,7 +19,7 @@ import tensorflow as tf
 from tensorflow.keras.layers import Activation, BatchNormalization, Dense, Dropout
 
 from .. import regularizers
-from . import backbone as core_backbone
+from . import backbones
 
 
 class DenseKU(Dense):
@@ -96,10 +96,10 @@ def build_model(
     name: str = None
 ):
   x = tf.keras.Input(input_shape, name='inputs')
-  bb = core_backbone.get(x, **backbone)
+  bb = backbones.get(x, **backbone)
   y = bb(x)
   y = build_head(y, **head)
-  
+
   return tf.keras.Model(x, y, name=name), bb
 
 def get(identifier):

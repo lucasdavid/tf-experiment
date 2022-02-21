@@ -15,10 +15,10 @@
 
 from keras.utils.layer_utils import count_params
 
-from . import backbone, classification
+from . import classification
 
 def summary(model, print_fn=print):
-  print_fn(f'Model {model.name}')
+  print_fn(f'Model {model.name}:')
   print_fn(' →  '.join(f'{l.name} ({type(l).__name__})' for l in model.layers))
 
   trainable_params = count_params(model.trainable_weights)
@@ -29,7 +29,7 @@ def summary(model, print_fn=print):
 
 
 __all__ = [
-  'backbone',
+  # 'backbones',
   'classification',
   'summary'
 ]

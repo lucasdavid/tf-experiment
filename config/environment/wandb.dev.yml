@@ -1,0 +1,3 @@
+setup:
+  wandb:
+    project: salient-segmentation-dev

@@ -1,0 +1,9 @@
+dataset:
+  prepare:
+    preprocess_fn: "keras.applications.resnet_v2.preprocess_input"
+model:
+  backbone:
+    architecture: SimpleCNN
+    config:
+      stacks: 3
+      dropout: 0.2

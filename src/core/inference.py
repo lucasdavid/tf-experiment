@@ -13,7 +13,11 @@
 # limitations under the License.
 # ==============================================================================
 
+from typing import Tuple
+
+import numpy as np
 import tensorflow as tf
+
 from .utils import to_list, unpack
 
 
@@ -21,12 +25,12 @@ def target_and_output(
     model: tf.keras.Model,
     dataset: tf.data.Dataset,
     verbose: int = 1,
-):
+) -> Tuple[np.ndarray, np.ndarray]:
   targets = []
   outputs = []
 
-  for step, (x, *t) in enumerate(dataset):
-    o = model(x, training=False)
+  for step, (x, *t) in enumerate(dataset.as_numpy_iterator()):
+    o = model.predict_on_batch(x)
 
     targets.append(t)
     outputs.append(to_list(o))
@@ -36,5 +40,5 @@ def target_and_output(
   
   if verbose > 0: print()
 
-  return (unpack([tf.concat(t, axis=0) for t in zip(*targets)]),
-          unpack([tf.concat(o, axis=0) for o in zip(*outputs)]))
+  return (unpack([np.concatenate(t, axis=0) for t in zip(*targets)]),
+          unpack([np.concatenate(o, axis=0) for o in zip(*outputs)]))

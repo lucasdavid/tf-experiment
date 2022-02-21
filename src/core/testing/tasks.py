@@ -15,6 +15,7 @@
 
 from typing import List, Tuple
 
+import numpy as np
 import tensorflow as tf
 from keras.utils.generic_utils import (deserialize_keras_object,
                                        serialize_keras_object)
@@ -23,25 +24,23 @@ from . import metrics
 
 
 def sparse_classification_multiclass(
-    target_and_output: Tuple[tf.Tensor, tf.Tensor],
+    target_and_output: Tuple[np.ndarray, np.ndarray],
     threshold: float = 0.5,
     classes: List[str] = None,
 ):
   labels, probabilities = target_and_output
-  target_and_output = (tf.one_hot(labels, depth=len(classes)), probabilities)
+  target_and_output = (tf.one_hot(labels, depth=len(classes)).numpy(), probabilities)
 
   return classification_multiclass(target_and_output, threshold, classes)
 
 
 def classification_multiclass(
-    target_and_output: Tuple[tf.Tensor, tf.Tensor],
+    target_and_output: Tuple[np.ndarray, np.ndarray],
     threshold: float = 0.5,
     classes: List[str] = None,
 ):
   labels, probabilities = target_and_output
-
-  labels = labels.numpy()
-  predictions = tf.argmax(probabilities, axis=1)
+  predictions = np.argmax(probabilities, axis=1)
 
   return {
     'classes': classes,
@@ -50,19 +49,18 @@ def classification_multiclass(
       tf.one_hot(predictions, depth=len(classes)).numpy()
     ),
     **metrics.classification_multiclass(
-      labels.argmax(axis=1), probabilities.numpy(), predictions.numpy()
+      labels.argmax(axis=1), probabilities, predictions
     )
   }
 
 
 def classification_multilabel(
-    target_and_output: Tuple[tf.Tensor, tf.Tensor],
+    target_and_output: Tuple[np.ndarray, np.ndarray],
     threshold: float = 0.5,
     classes: List[str] = None,
 ):
   labels, probabilities = target_and_output
-  predictions = tf.cast(probabilities > threshold, probabilities.dtype).numpy()
-  labels = labels.numpy()
+  predictions = np.cast(probabilities > threshold, probabilities.dtype)
 
   return {
     'classes': classes,
@@ -72,36 +70,14 @@ def classification_multilabel(
 
 
 def segmentation(
-    target_and_output: Tuple[tf.Tensor, tf.Tensor],
+    target_and_output: Tuple[np.ndarray, np.ndarray],
     threshold: float = 0.5,
     classes: List[str] = None,
 ):
   maps, probabilities = target_and_output
-  predictions = tf.cast(probabilities > threshold, probabilities.dtype).numpy()
-  maps = maps.numpy()
+  predictions = np.cast(probabilities > threshold, probabilities.dtype)
 
   return metrics.segmentation_multiclass(maps, predictions, probabilities)
-
-
-def explaining(
-    target_and_output: Tuple[tf.Tensor, tf.Tensor],
-    threshold: float = 0.5,
-    classes: List[str] = None,
-):
-  (b, y), (p, c) = target_and_output
-  pr = tf.cast(p > threshold, p.dtype).numpy()
-
-  _loc_iou = metrics.iou_localization_detection(
-    b.numpy(),
-    y.numpy(),
-    c.numpy(),
-    p.numpy(),
-    pr.numpy())
-
-  return {
-    'classes': classes,
-    'localization_iou': _loc_iou,
-  }
 
 
 def serialize(metric):

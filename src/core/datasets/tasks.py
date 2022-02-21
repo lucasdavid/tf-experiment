@@ -15,8 +15,6 @@
 
 from logging import warning
 
-from logging import warning
-
 import tensorflow as tf
 from keras.utils.generic_utils import (deserialize_keras_object,
                                        serialize_keras_object)
@@ -28,10 +26,9 @@ def classification(entry, classes, sizes, keys):
   image, label = (dig(entry, k) for k in keys)
 
   if sizes is not None:
-    image, _ = adjust_resolution(image, sizes)
+    image, *_ = adjust_resolution(image, sizes)
 
-  return tf.cast(image, tf.float32), label
-
+  return image, label
 
 
 def classification_multilabel_from_detection(entry, classes, sizes, keys):
@@ -56,28 +53,28 @@ def object_detection(entry, classes, sizes, keys):
     warning(f'An object detection task is running, but "objects" is not in '
             f'keys={keys}. Make sure you are selecting the correct labels.')
   
-  image, bboxes, label = (dig(entry, k) for k in keys)
+  image, label, bboxes = (dig(entry, k) for k in keys)
 
   if sizes is not None:
-    image, _ = adjust_resolution(image, sizes)
+    image, reduction_ratio, pad_ratio = adjust_resolution(image, sizes)
   
-  return image, bboxes, label
+  return image, label, bboxes * [pad_ratio[0], pad_ratio[1], pad_ratio[0], pad_ratio[1]]
 
 
-def object_detection(entry, classes, sizes, keys):
-  if not any('objects' in k for k in keys):
-    warning(f'An object detection task is running, but "objects" is not in '
+def instance_segmentation(entry, classes, sizes, keys):
+  if not any('panoptic_objects' in k for k in keys):
+    warning(f'A segmentation task is running, but "panoptic_objects" is not in '
             f'keys={keys}. Make sure you are selecting the correct labels.')
   
-  image, bboxes, label = (tf.cast(dig(entry, k), tf.float32) for k in keys)
+  image, label, bboxes, panoptic_image = (dig(entry, k) for k in keys)
 
   if sizes is not None:
-    image, _ = adjust_resolution(image, sizes)
+    image, panoptic_image, reduction_ratio, pad_ratio = adjust_resolution(image, sizes, panoptic_image)
+  
+  return image, label, bboxes * [pad_ratio[0], pad_ratio[1], pad_ratio[0], pad_ratio[1]], panoptic_image
 
-  return image, bboxes, label
 
-
-def adjust_resolution(image, sizes):
+def adjust_resolution(image, sizes, mask=None):
   """Adjust input image sizes to be within the expected `sizes`.
 
   Example:
@@ -91,12 +88,18 @@ def adjust_resolution(image, sizes):
   xs = tf.cast(tf.shape(image)[:2], tf.float32)
 
   ratio = tf.reduce_min(es / xs)
-  xsn = tf.cast(tf.math.ceil(ratio * xs), tf.int32)
+  xsn = tf.math.ceil(ratio * xs)
 
-  image = tf.image.resize(image, xsn, preserve_aspect_ratio=True, method='nearest')
-  image = tf.image.resize_with_crop_or_pad(image, *sizes)
+  target_shape = tf.cast(xsn, tf.int32)
+  image = tf.image.resize(image, target_shape, preserve_aspect_ratio=True, method='nearest')
 
-  return image, ratio
+  if not mask:
+    return image, ratio, xsn/es
+    
+  mask = tf.image.resize(mask, target_shape, preserve_aspect_ratio=True, method='nearest')
+
+  return image, mask, ratio, xsn/es
+
 
 
 def serialize(task):

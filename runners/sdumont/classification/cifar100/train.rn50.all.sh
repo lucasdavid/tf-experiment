@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=256
 #SBATCH -p sequana_gpu_shared
 #SBATCH -J lerdl-ss-cifar100-train.rn50.all
 #SBATCH -o /scratch/lerdl/lucas.david/logs/cifar100.train.rn50.all.%j.out
@@ -57,7 +57,7 @@ set -o allexport
 source ./config/sdumont/.env
 set +o allexport
 
-SOURCE=src/train_and_finetune.py
+SOURCE=experiments/train_and_finetune.py
 
 
 ## Augmentation
@@ -67,42 +67,42 @@ EXPERIMENT=noaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'noaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/none.yml                            \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/none.yml                            \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/noaug                                 \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=finetune-noaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'noaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/none.yml                            \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/none.yml                            \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/noaug                                 \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -110,42 +110,42 @@ EXPERIMENT=simpleaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'simpleaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/simple.yml                          \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/simple.yml                          \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/simpleaug                             \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=finetune-simpleaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'simpleaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/simple.yml                          \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=1 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/simple.yml                          \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/simpleaug                             \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -153,42 +153,42 @@ EXPERIMENT=randaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/randaug                               \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=finetune-randaug
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug']"
 LOGS=$LOGS_DIR/classification/cifar100/augmentation-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/randaug                               \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -200,44 +200,44 @@ EXPERIMENT=randaug-dropout
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'dropout']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/dropout.yml          \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/dropout.yml          \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/dropout                               \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=randaug-dropout
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'dropout']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/dropout.yml          \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=2 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/dropout.yml          \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/dropout                               \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -245,44 +245,44 @@ EXPERIMENT=randaug-l1l2
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'l1l2']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/l1l2.yml             \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/l1l2.yml             \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/l1l2                                  \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=randaug-l1l2
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'l1l2']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/l1l2.yml             \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/l1l2.yml             \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/l1l2                                  \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -290,44 +290,44 @@ EXPERIMENT=randaug-ortho
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'ortho']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/orthogonal.yml       \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/orthogonal.yml       \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/ortho                                 \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=randaug-ortho
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'ortho']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/orthogonal.yml       \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=3 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/orthogonal.yml       \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/ortho                                 \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -335,44 +335,44 @@ EXPERIMENT=randaug-kernel-usage
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'momentum', 'randaug', 'kernel-usage']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/kernel-usage.yml     \
-  config/runs/mixins/training/preinitialized-training.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/kernel-usage.yml     \
+  config/training/preinitialized-training.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/kernel-usage                          \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 EXPERIMENT=randaug-kernel-usage
 EXPERIMENT_TAGS="['cifar100', 'rn50', 'finetune', 'momentum', 'randaug', 'kernel-usage']"
 LOGS=$LOGS_DIR/classification/cifar100/regularization-finetune
 mkdir -p $LOGS
-CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with                         \
-  config/runs/classification/train_and_finetune.yml                   \
-  config/runs/classification/mixins/datasets/cifar100.yml             \
-  config/runs/mixins/augmentation/randaug.yml                         \
-  config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
-  config/runs/classification/mixins/regularizers/kernel-usage.yml     \
-  config/runs/mixins/training/train-head-and-finetune.yml             \
-  config/runs/mixins/environment/precision-mixed-float16.yml          \
-  config/runs/mixins/environment/sdumont.yml                          \
-  config/runs/mixins/logging/wandb.yml                                \
+CUDA_VISIBLE_DEVICES=0 python3.9 $SOURCE with             \
+  config/classification/train_and_finetune.yml                   \
+  config/classification/datasets/cifar100.yml             \
+  config/augmentation/randaug.yml                         \
+  config/classification/optimizers/momentum_nesterov.yml  \
+  config/classification/regularizers/kernel-usage.yml     \
+  config/training/train-head-and-finetune.yml             \
+  config/environment/precision-mixed-float16.yml          \
+  config/environment/sdumont.yml                          \
+  config/logging/wandb.train.yml                          \
   setup.paths.ckpt=$LOGS/backup/kernel-usage                          \
-  setup.paths.wandb_dir=$LOGS_DIR                                     \
-  setup.wandb.name=$EXPERIMENT                                        \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                                 \
-  -F $LOGS                                                            \
-  &> $LOGS/$EXPERIMENT.log                                            &
+  setup.paths.wandb_dir=$LOGS                             \
+  setup.wandb.name=$EXPERIMENT                            \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  -F $LOGS                                                \
+  &> $LOGS/$EXPERIMENT.log                                &
 echo "Job [$EXPERIMENT] stacked. Logs will be placed at $LOGS/$EXPERIMENT.log"
 
 
@@ -381,34 +381,34 @@ wait
 
 #   All Mixins Available:
 #
-#   config/runs/classification/mixins/datasets/cifar10.yml              \
-#   config/runs/classification/mixins/datasets/cifar100.yml             \
-#   config/runs/classification/mixins/datasets/cityscapes.yml           \
-#   config/runs/classification/mixins/datasets/coco17.yml               \
-#   config/runs/classification/mixins/datasets/voc07.yml                \
-#   config/runs/classification/mixins/datasets/voc12.yml                \
+#   config/classification/datasets/cifar10.yml              \
+#   config/classification/datasets/cifar100.yml             \
+#   config/classification/datasets/cityscapes.yml           \
+#   config/classification/datasets/coco17.yml               \
+#   config/classification/datasets/voc07.yml                \
+#   config/classification/datasets/voc12.yml                \
 #
-#   config/runs/mixins/training/preinitialized-training.yml             \
-#   config/runs/mixins/training/train-head-and-finetune.yml             \
+#   config/training/preinitialized-training.yml             \
+#   config/training/train-head-and-finetune.yml             \
 #
-#   config/runs/classification/mixins/optimizers/momentum_nesterov.yml  \
+#   config/classification/optimizers/momentum_nesterov.yml  \
 #
-#   config/runs/classification/mixins/regularizers/dropout.yml          \
-#   config/runs/classification/mixins/regularizers/kernel-usage.yml     \
-#   config/runs/classification/mixins/regularizers/orthogonal.yml       \
-#   config/runs/classification/mixins/regularizers/l1l2.yml             \
+#   config/classification/regularizers/dropout.yml          \
+#   config/classification/regularizers/kernel-usage.yml     \
+#   config/classification/regularizers/orthogonal.yml       \
+#   config/classification/regularizers/l1l2.yml             \
 #
-#   config/runs/mixins/augmentation/none.yml                            \
-#   config/runs/mixins/augmentation/simple.yml                          \
-#   config/runs/mixins/augmentation/randaug.yml                         \
+#   config/augmentation/none.yml                            \
+#   config/augmentation/simple.yml                          \
+#   config/augmentation/randaug.yml                         \
 #
-#   config/runs/mixins/environment/precision-mixed-float16.yml          \
-#   config/runs/mixins/environment/dev.yml                              \
-#   config/runs/mixins/environment/sdumont.yml                          \
-#   config/runs/mixins/logging/wandb.yml                                \
+#   config/environment/precision-mixed-float16.yml          \
+#   config/environment/dev.yml                              \
+#   config/environment/sdumont.yml                          \
+#   config/logging/wandb.train.yml                          \
 #
-#   config/runs/mixins/models/enb0.yml                                  \
-#   config/runs/mixins/models/enb6.yml                                  \
-#   config/runs/mixins/models/rn50.yml                                  \
-#   config/runs/mixins/models/rn101.yml                                 \
-#   config/runs/mixins/models/rn152.yml                                 \
+#   config/models/enb0.yml                                  \
+#   config/models/enb6.yml                                  \
+#   config/models/rn50.yml                                  \
+#   config/models/rn101.yml                                 \
+#   config/models/rn152.yml                                 \

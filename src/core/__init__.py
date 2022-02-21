@@ -18,17 +18,24 @@ from . import (
   experiment,
   inference,
   models,
+  regularizers,
   testing,
   training,
   vis,
-  utils,
+  utils
 )
+
+custom_objects = {
+  'Orthogonal': regularizers.Orthogonal,
+  'DenseKU': models.classification.DenseKU,
+}
 
 __all__ = [
   'datasets', 
   'experiment',
   'inference',
   'models',
+  'regularizers',
   'testing',
   'training',
   'vis',

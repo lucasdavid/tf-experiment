@@ -1,6 +1,7 @@
 numpy
 scipy
 pandas
+tabulate
 PyYAML
 https://github.com/IDSIA/sacred/archive/master.tar.gz
 
@@ -8,9 +9,10 @@ matplotlib
 seaborn
 
 tensorflow==2.8.0
-tensorflow-addons==0.15.0
+tensorflow-addons==0.16.1
 tensorflow-datasets
 h5py
+pydot
 
 opencv-python
 imgaug

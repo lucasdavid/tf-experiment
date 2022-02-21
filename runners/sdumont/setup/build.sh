@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=8
 #SBATCH -p sequana_gpu_shared
 #SBATCH -J ss_setup
 #SBATCH -o /scratch/lerdl/lucas.david/logs/setup.%j.out
