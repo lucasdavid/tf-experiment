@@ -1,6 +1,8 @@
-# Salient Segmentation
+# TF-Experiment
 
-Tensorflow implementation of attention-and-saliency-based-segmentation.
+Template for Tensorflow experiments.
+Includes configuration loading and mixup,
+model deserialization and logging on disk and [wandb](https://wandb.ai).
 
 ## Setup
 You can use this project in multiple distinct environments.
@@ -59,7 +61,7 @@ python ...
 SOURCE=experiments/train_and_finetune.py
 LOGS=./logs/classification/cifar10/train.rn50.noaug
 
-python $SOURCE                                                        \
+python $SOURCE                                            \
   config/classification/train_and_finetune.yml            \
   config/classification/datasets/cifar10.yml              \
   setup.paths.ckpt=$LOGS/backup                           \
@@ -77,10 +79,10 @@ SOURCE=experiments/train_and_finetune.py
 LOGS=./logs/classification/cifar10/train.rn50.noaug
 
 
-docker-compose exec $SERVICE                              \
+docker-compose exec $SERVICE                                  \
   python -X pycache_prefix=$PYTHONPYCACHEPREFIX $SOURCE with  \
-  config/classification/train_and_finetune.yml            \
-  setup.paths.ckpt=$LOGS/backup                           \
+  config/classification/train_and_finetune.yml                \
+  setup.paths.ckpt=$LOGS/backup                               \
   -F $LOGS
 ```
 
@@ -91,16 +93,16 @@ simply appending them to the command:
 EXPERIMENT=voc12-noaug
 EXPERIMENT_TAGS="['voc12', 'rn50']"
 
-docker-compose exec $SERVICE                              \
+docker-compose exec $SERVICE                                  \
   python -X pycache_prefix=$PYTHONPYCACHEPREFIX $SOURCE with  \
-  config/classification/train_and_finetune.yml            \
-  config/classification/datasets/voc12.yml                \
-  config/augmentation/randaug.yml                         \
-  config/logging/wandb.train.yml                          \
-  setup.paths.ckpt=$LOGS/backup                           \
-  setup.paths.wandb_dir=$LOGS                             \
-  setup.wandb.name=$EXPERIMENT                            \
-  setup.wandb.tags="$EXPERIMENT_TAGS"                     \
+  config/classification/train_and_finetune.yml                \
+  config/classification/datasets/voc12.yml                    \
+  config/augmentation/randaug.yml                             \
+  config/logging/wandb.train.yml                              \
+  setup.paths.ckpt=$LOGS/backup                               \
+  setup.paths.wandb_dir=$LOGS                                 \
+  setup.wandb.name=$EXPERIMENT                                \
+  setup.wandb.tags="$EXPERIMENT_TAGS"                         \
   -F $LOGS
 ```
 
