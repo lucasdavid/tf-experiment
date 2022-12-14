@@ -8,8 +8,8 @@ https://github.com/IDSIA/sacred/archive/master.tar.gz
 matplotlib
 seaborn
 
-tensorflow==2.8.0
-tensorflow-addons==0.16.1
+tensorflow
+tensorflow-addons
 tensorflow-datasets
 h5py
 pydot
